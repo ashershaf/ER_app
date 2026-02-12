@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ER Quick Notes</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>ER Quick Notes</h1>
+        <p class="subtitle">Rapid clinical documentation for emergency physicians</p>
+    </header>
+
+    <main>
+        <!-- Step 1: Chief Complaint Selection -->
+        <section id="complaint-section">
+            <h2>Chief Complaint</h2>
+            <div id="complaint-grid" class="complaint-grid"></div>
+        </section>
+
+        <!-- Step 2: Dynamic Question Sections -->
+        <section id="questions-section" class="hidden">
+            <div class="selected-complaint-bar">
+                <span id="selected-complaint-label"></span>
+                <button id="change-complaint-btn" class="btn-small">Change</button>
+            </div>
+
+            <!-- Free text for onset/context -->
+            <div class="context-box">
+                <label for="context-input">Brief context (age/sex, onset, duration):</label>
+                <input type="text" id="context-input" placeholder='e.g. "45M, sudden onset 2hrs ago, at rest"'>
+            </div>
+
+            <div id="question-panels"></div>
+
+            <div class="action-bar">
+                <button id="generate-note-btn" class="btn-primary">Generate Note</button>
+                <button id="clear-all-btn" class="btn-secondary">Clear All</button>
+            </div>
+        </section>
+
+        <!-- Step 3: Generated Note -->
+        <section id="note-section" class="hidden">
+            <h2>Generated Note</h2>
+            <div id="note-output" class="note-output"></div>
+            <div class="action-bar">
+                <button id="copy-note-btn" class="btn-primary">Copy to Clipboard</button>
+                <button id="edit-questions-btn" class="btn-secondary">Back to Questions</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="complaints.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
