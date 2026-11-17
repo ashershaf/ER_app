@@ -191,7 +191,7 @@ function ex(id, label, normal, abn) { return { id: id, label: label, type: "exam
 var HTN = yn("htn", "Hypertension");
 var DM = yn("dm", "Diabetes", { sub: [ch("dm_rx", "Treatment", ["diet-controlled", "on oral agents", "on insulin"])] });
 var LIPID = yn("lipid", "Hyperlipidemia");
-var SMOKE = yn("smoke", "Smoking", { p: "smoking history", sub: [
+var SMOKE = yn("smoke", "Smoking", { p: "smoking history", no: "Non-smoker", sub: [
     one("smoke_s", "Status", ["current smoker", "ex-smoker"]),
     tx("smoke_py", "Pack-years", "e.g. 30", { t: "{} pack-years" })
 ] });
@@ -232,7 +232,7 @@ var ESTROGEN = yn("estrogen", "Estrogen use", { h: "combined pill, HRT", sex: "F
 var PREG = yn("preg", "Pregnant / possibly pregnant", { sex: "F", p: "possible pregnancy", n: "possibility of pregnancy", sub: [
     tx("preg_x", "LMP / gestation", "e.g. LMP 3 weeks ago", { t: "{}" })
 ] });
-var IMMUNO = yn("immuno", "Immunocompromised", { p: "immunocompromised", n: "immunocompromise", sub: [
+var IMMUNO = yn("immuno", "Immunocompromised", { p: "immunocompromise", n: "immunocompromise", sub: [
     ch("immuno_c", "Cause", ["chemotherapy", "long-term steroids", "biologic / immunosuppressant", "HIV", "transplant", "asplenia", "neutropenia"])
 ] });
 var CKD = yn("ckd", "Chronic kidney disease", { sub: [yn("ckd_d", "On dialysis")] });
@@ -780,7 +780,7 @@ var COMPLAINTS = [
 /* ---------------- 15. URINARY ---------------- */
 { id: "urinary", name: "Urinary symptoms", cc: "urinary symptoms", sections: [
     { title: "Urinary symptoms", lead: "Duration:", q: [
-        tx("dur", "Duration", "e.g. 2 days", { t: "{}" }),
+        tx("dur", "Duration", "e.g. 2 days", { t: "for {}" }),
         yn("dysuria", "Dysuria"), yn("freq", "Frequency"), yn("urg", "Urgency"),
         yn("hemat", "Hematuria", { sub: [yn("clots", "Passing clots")] }),
         yn("supra", "Suprapubic pain"),
@@ -1036,7 +1036,7 @@ function tpl(q, v) { return q.t ? q.t.replace("{}", v) : v; }
 /* Fragments for chips / text / scale. Returns an array of strings. */
 function frags(q) {
     var v = A[q.id];
-    if (q.type === "scale") return v ? ["severity " + v + "/10"] : [];
+    if (q.type === "scale") return v ? [v + "/10 in severity"] : [];
     if (q.type === "text") return v ? [q.t ? tpl(q, v) : lc(q.label) + " " + v] : [];
     if (q.type === "chips") {
         var arr = q.single ? (v ? [v] : []) : (v || []);
@@ -1067,28 +1067,67 @@ function withDetails(text, q) {
     return d.length ? text + " (" + d.join("; ") + ")" : text;
 }
 
-function sectionText(sec) {
-    var fr = [], yes = [], no = [], sents = [];
-    var isHx = sec.part === "hx";
-    var pos = sec.pos !== undefined ? sec.pos : (isHx ? "" : "Reports");
-    var neg = sec.neg !== undefined ? sec.neg : (isHx ? "No" : "Denies");
+/* Negative lists: "a/b" reads as "a or b"; when items already contain "or",
+   join the list with "and" so it never reads "or x or y". */
+function negList(items, conj) {
+    items = items.map(function (x) { return x.replace(/\//g, " or "); });
+    var nested = items.some(function (x) { return / or /.test(x); });
+    return list(items, nested && conj !== "not" ? "and" : "or");
+}
+function negPhrase(t) { return lc(t).replace(/^no /, "without "); }
+
+/* Collect a section's answers into positive and negative pieces. */
+function sectionParts(sec) {
+    var r = { fr: [], sents: [], yes: [], no: [], dur: "" };
     sec.q.forEach(function (q) {
         if (!vis(q)) return;
-        if (q.type !== "yn") { fr = fr.concat(frags(q)); return; }
+        if (q.type !== "yn") {
+            if (q.id === "dur" && q.t === "for {}" && A.dur) { r.dur = "for " + A.dur; return; }
+            r.fr = r.fr.concat(frags(q)); return;
+        }
         var v = A[q.id];
         if (v === true) {
-            if (q.yes) sents.push(withDetails(q.yes, q) + ".");
-            else yes.push(withDetails(q.p || lc(q.label), q));
+            if (q.yes) r.sents.push(withDetails(q.yes, q));
+            else r.yes.push(withDetails(q.p || lc(q.label), q));
         } else if (v === false || (!q.s && sexKnown(q))) {
-            if (q.no) sents.push(q.no + ".");
-            else if (!q.yes) no.push(q.n || lc(q.label));
+            if (q.no) r.sents.push(q.no);
+            else if (!q.yes) r.no.push(q.n || lc(q.label));
         }
     });
+    return r;
+}
+
+/* First (descriptive) section: a run of comma-separated descriptors. */
+function descriptors(sec, r) {
+    var posw = [], negw = [];
+    r.fr.forEach(function (f) { posw.push(lc(f)); });
+    r.sents.forEach(function (t) { if (/^(no|not) /i.test(t)) negw.push(negPhrase(t)); else posw.push(lc(t)); });
+    var pre = sec.pos && !/ is$/.test(sec.pos) ? lc(sec.pos) + " " : "";
+    if (r.yes.length) posw.push(pre + list(r.yes, "and"));
+    if (r.no.length) {
+        var nw = sec.neg ? lc(sec.neg) : "without";
+        negw.push(nw + " " + negList(r.no, nw));
+    }
+    return posw.concat(negw);
+}
+
+function sectionText(sec) {
+    var r = sectionParts(sec);
+    var isHx = sec.part === "hx";
     var out = [];
-    if (fr.length) out.push((sec.lead ? sec.lead + " " + fr.join(", ") : cap(fr.join(", "))) + ".");
-    out = out.concat(sents);
-    if (yes.length) out.push(cap((pos ? pos + " " : "") + list(yes, "and")) + ".");
-    if (no.length) out.push(cap(neg + " " + list(no, "or")) + ".");
+    if (isHx) {
+        var items = r.yes.concat(r.fr.map(lc));
+        if (items.length) out.push(cap(items.join(", ")) + ".");
+        r.sents.forEach(function (t) { out.push(cap(t) + "."); });
+        if (r.no.length) out.push("No " + negList(r.no) + ".");
+        return out.join(" ");
+    }
+    var pos = sec.pos !== undefined ? sec.pos : "Associated with";
+    var neg = sec.neg !== undefined ? sec.neg : "Denies";
+    if (r.fr.length) out.push(cap(r.fr.join(", ")) + ".");
+    r.sents.forEach(function (t) { out.push(cap(t) + "."); });
+    if (r.yes.length) out.push(cap(pos + " " + list(r.yes, "and")) + ".");
+    if (r.no.length) out.push(cap(neg + " " + negList(r.no, lc(neg))) + ".");
     return out.join(" ");
 }
 
@@ -1114,35 +1153,44 @@ function examLines(sec) {
     return lines;
 }
 
-function intro() {
-    var who;
+function who() {
     var sex = P.sex === "M" ? "male" : P.sex === "F" ? "female" : "";
-    if (P.age) who = P.age + "-year-old" + (sex ? " " + sex : " patient");
-    else who = sex ? cap(sex) + " patient" : "Patient";
-    var s = who + " presenting with " + cur.cc + ".";
+    if (P.age) return P.age + "-year-old " + (sex || "patient");
+    return sex ? cap(sex) + " patient" : "Patient";
+}
+
+function opening(sec) {
+    var r = sec ? sectionParts(sec) : { fr: [], sents: [], yes: [], no: [], dur: "" };
+    var s = who() + " presenting with " + cur.cc + (r.dur ? " " + r.dur : "");
+    var d = sec ? descriptors(sec, r) : [];
+    if (d.length && d.length <= 3) s += ", " + d.join(", ") + ".";
+    else if (d.length) s += ". " + cap(d.join(", ")) + ".";
+    else s += ".";
     var story = P.story.replace(/\s+$/, "");
-    if (story) s += " " + story + (/[.!?]$/.test(story) ? "" : ".");
+    if (story) s += " " + cap(story) + (/[.!?]$/.test(story) ? "" : ".");
     return s;
 }
 
 function buildNote() {
     if (!cur) return "";
-    var hpi = [intro()], hx = [], exam = [];
+    var hx = [], exam = [], rest = [], firstSec = null;
     cur.sections.forEach(function (sec) {
         if (sec.part === "exam") { exam = exam.concat(examLines(sec)); return; }
         if (sec.part === "bg") {
             if (A.pmh_o) hx.push("Other history: " + A.pmh_o + ".");
             if (A.meds) hx.push("Medications: " + A.meds + ".");
             if (A.allergy === true) hx.push("Allergies: " + (A.allergy_x || "yes, details not recorded") + ".");
-            else if (A.allergy === false) hx.push("Allergies: no known drug allergies.");
+            else if (A.allergy === false) hx.push("Allergies: NKDA.");
             return;
         }
+        if (!sec.part && !firstSec) { firstSec = sec; return; }
         var t = sectionText(sec);
         if (!t) return;
-        if (sec.part === "hx") hx.push((sec.head || "History") + ": " + t);
-        else hpi.push(t);
+        if (sec.part === "hx") hx.push((sec.head === "History" ? "PMH" : (sec.head || "PMH")) + ": " + t);
+        else rest.push(t);
     });
-    var out = ["CC: " + cur.name, "", "HPI: " + hpi.join("\n")];
+    var hpi = opening(firstSec) + (rest.length ? " " + rest.join(" ") : "");
+    var out = ["CC: " + cur.name, "", "HPI: " + hpi];
     if (hx.length) out.push("", hx.join("\n"));
     if (exam.length) out.push("", "Exam:", exam.join("\n"));
     return out.join("\n");
