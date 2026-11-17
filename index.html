@@ -1,1693 +1,1396 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ER Quick Notes</title>
-    <style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ER Quick Notes</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #f0f2f5;
-    color: #1a1a2e;
-    line-height: 1.5;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #f1f4f7; color: #16202b; line-height: 1.45; font-size: 15px;
+}
+button, input { font-family: inherit; }
+.hidden { display: none !important; }
+
+header { background: #12303f; color: #fff; padding: 0.7rem 1.25rem; display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+header h1 { font-size: 1.15rem; font-weight: 700; }
+header p { font-size: 0.8rem; opacity: 0.75; }
+
+.layout { max-width: 1320px; margin: 1rem auto; padding: 0 1rem 5rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+@media (min-width: 1000px) {
+    .layout { grid-template-columns: minmax(0, 1fr) minmax(360px, 460px); padding-bottom: 2rem; }
+    .note-col { position: sticky; top: 1rem; align-self: start; max-height: calc(100vh - 2rem); display: flex; flex-direction: column; }
+    .note-col .note-output { overflow-y: auto; }
+    .mobile-bar { display: none !important; }
 }
 
-header {
-    background: #1a1a2e;
-    color: white;
-    padding: 1rem 2rem;
-    text-align: center;
+.card { background: #fff; border: 1px solid #dde3ea; border-radius: 10px; margin-bottom: 0.75rem; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.55rem 0.9rem; border-bottom: 1px solid #e8edf2; background: #f7f9fb; border-radius: 10px 10px 0 0; }
+.card-head h2 { font-size: 0.95rem; font-weight: 700; color: #12303f; }
+.card-body { padding: 0.3rem 0.9rem 0.5rem; }
+
+/* Patient card */
+.patient { display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: flex-end; padding: 0.75rem 0.9rem; }
+.field label { display: block; font-size: 0.75rem; font-weight: 600; color: #51606f; margin-bottom: 0.2rem; }
+.field input { padding: 0.45rem 0.6rem; border: 1.5px solid #c9d2dc; border-radius: 6px; font-size: 0.95rem; }
+.field input:focus, .txt:focus { outline: none; border-color: #0f7b8a; box-shadow: 0 0 0 3px rgba(15,123,138,0.15); }
+#age-input { width: 5.5rem; }
+.field.grow { flex: 1 1 240px; }
+.field.grow input { width: 100%; }
+
+/* Complaint picker */
+.complaint-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0.45rem; padding: 0.75rem 0.9rem; }
+.complaint-btn { padding: 0.65rem 0.75rem; border: 1.5px solid #c9d2dc; border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.92rem; font-weight: 600; color: #16202b; text-align: left; }
+.complaint-btn:hover, .complaint-btn:focus { border-color: #0f7b8a; background: #eef8f9; outline: none; }
+.cc-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; background: #12303f; color: #fff; padding: 0.55rem 0.9rem; border-radius: 10px; margin-bottom: 0.5rem; }
+.cc-bar strong { font-size: 1.05rem; }
+.cc-bar div { display: flex; gap: 0.4rem; }
+.btn-ghost { padding: 0.3rem 0.7rem; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; background: transparent; color: #fff; cursor: pointer; font-size: 0.8rem; }
+.btn-ghost:hover { background: rgba(255,255,255,0.12); }
+.tip { font-size: 0.8rem; color: #51606f; margin: 0 0.2rem 0.6rem; }
+
+/* Question rows */
+.row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.32rem 0; border-bottom: 1px solid #f0f3f6; min-height: 2.3rem; }
+.q:last-child > .row { border-bottom: none; }
+.row.stack { flex-direction: column; align-items: stretch; gap: 0.25rem; padding: 0.45rem 0; }
+.lab { flex: 1 1 auto; font-size: 0.9rem; min-width: 0; }
+.lab small { display: block; font-size: 0.74rem; color: #6b7a89; line-height: 1.25; }
+.subs { margin: 0 0 0.35rem 0.4rem; padding: 0.1rem 0 0.1rem 0.75rem; border-left: 3px solid #9fd3d9; background: #f6fbfc; border-radius: 0 6px 6px 0; }
+.subs .lab { font-size: 0.85rem; color: #33424f; }
+.subs .row { padding-right: 0.5rem; }
+
+.tog { display: flex; flex-shrink: 0; }
+.tog button { min-width: 2.9rem; padding: 0.3rem 0.5rem; border: 1.5px solid #c9d2dc; background: #fff; cursor: pointer; font-size: 0.8rem; font-weight: 700; color: #5c6b7a; }
+.tog button:first-child { border-radius: 6px 0 0 6px; }
+.tog button:last-child { border-radius: 0 6px 6px 0; margin-left: -1.5px; }
+.tog button.on-yes { background: #d9f2e1; border-color: #1f8a4c; color: #156337; position: relative; z-index: 1; }
+.tog button.on-no { background: #fde8e8; border-color: #c83a3a; color: #a52828; position: relative; z-index: 1; }
+.tog button.on-abn { background: #fdecd2; border-color: #c97a12; color: #8f5407; position: relative; z-index: 1; }
+.tog.exam button { min-width: 4.6rem; }
+button:focus-visible { outline: 2px solid #0f7b8a; outline-offset: 1px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-end; flex: 0 1 auto; max-width: 72%; }
+.row.stack .chips { justify-content: flex-start; max-width: 100%; }
+.chip { padding: 0.25rem 0.6rem; border: 1.5px solid #c9d2dc; border-radius: 999px; background: #fff; cursor: pointer; font-size: 0.8rem; color: #45535f; }
+.chip.on { background: #d5eef1; border-color: #0f7b8a; color: #0a5560; font-weight: 600; }
+.scale .chip { min-width: 1.9rem; padding: 0.25rem 0.3rem; text-align: center; }
+.txt { width: 13rem; max-width: 55%; flex-shrink: 0; padding: 0.3rem 0.5rem; border: 1.5px solid #c9d2dc; border-radius: 6px; font-size: 0.85rem; }
+.row.stack .txt { width: 100%; max-width: 100%; }
+
+.btn-sm { padding: 0.3rem 0.7rem; border: 1.5px solid #0f7b8a; border-radius: 6px; background: #fff; color: #0a5560; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+.btn-sm:hover { background: #eef8f9; }
+
+/* Note */
+.note-col .card { margin-bottom: 0; display: flex; flex-direction: column; min-height: 0; }
+.note-output { padding: 0.9rem 1rem; white-space: pre-wrap; word-wrap: break-word; font-size: 0.9rem; line-height: 1.6; min-height: 8rem; }
+.note-output.empty { color: #7b8896; }
+.btn-primary { padding: 0.45rem 1rem; background: #0f7b8a; color: #fff; border: none; border-radius: 6px; font-size: 0.88rem; font-weight: 700; cursor: pointer; }
+.btn-primary:hover { background: #0b626e; }
+.note-foot { padding: 0.5rem 1rem; border-top: 1px solid #e8edf2; font-size: 0.74rem; color: #6b7a89; }
+
+.mobile-bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 0.5rem; padding: 0.55rem 1rem; background: #fff; border-top: 1px solid #dde3ea; box-shadow: 0 -2px 10px rgba(0,0,0,0.07); z-index: 50; }
+.mobile-bar button { flex: 1; padding: 0.65rem; }
+.btn-outline { background: #fff; color: #0a5560; border: 1.5px solid #0f7b8a; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer; }
+
+.toast { position: fixed; bottom: 4.5rem; left: 50%; transform: translateX(-50%); background: #12303f; color: #fff; padding: 0.55rem 1.2rem; border-radius: 8px; font-size: 0.88rem; z-index: 100; }
+
+@media (max-width: 560px) {
+    .row { flex-wrap: wrap; }
+    .chips { max-width: 100%; justify-content: flex-start; }
+    .txt { max-width: 100%; width: 100%; }
 }
-
-header h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
-}
-
-.subtitle {
-    font-size: 0.85rem;
-    opacity: 0.7;
-    margin-top: 0.25rem;
-}
-
-main {
-    max-width: 900px;
-    margin: 1.5rem auto;
-    padding: 0 1rem;
-}
-
-h2 {
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-    color: #1a1a2e;
-}
-
-.hidden {
-    display: none !important;
-}
-
-/* ---- Chief Complaint Grid ---- */
-.complaint-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 0.5rem;
-}
-
-.complaint-btn {
-    padding: 0.7rem 1rem;
-    border: 2px solid #d0d5dd;
-    border-radius: 8px;
-    background: white;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    text-align: left;
-    transition: all 0.15s;
-}
-
-.complaint-btn:hover {
-    border-color: #2563eb;
-    background: #eff6ff;
-}
-
-.complaint-btn .emoji {
-    margin-right: 0.4rem;
-}
-
-/* ---- Selected Complaint Bar ---- */
-.selected-complaint-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: #1a1a2e;
-    color: white;
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    font-weight: 600;
-    font-size: 1rem;
-}
-
-.btn-small {
-    padding: 0.3rem 0.8rem;
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 4px;
-    background: transparent;
-    color: white;
-    cursor: pointer;
-    font-size: 0.8rem;
-}
-
-.btn-small:hover {
-    background: rgba(255,255,255,0.1);
-}
-
-/* ---- Context Box ---- */
-.context-box {
-    margin-bottom: 1rem;
-}
-
-.context-box label {
-    display: block;
-    font-size: 0.85rem;
-    font-weight: 600;
-    margin-bottom: 0.3rem;
-    color: #475467;
-}
-
-.context-box input {
-    width: 100%;
-    padding: 0.6rem 0.8rem;
-    border: 1.5px solid #d0d5dd;
-    border-radius: 6px;
-    font-size: 0.9rem;
-}
-
-.context-box input:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-/* ---- Question Panels (Accordion) ---- */
-.panel {
-    background: white;
-    border: 1.5px solid #e4e7ec;
-    border-radius: 8px;
-    margin-bottom: 0.5rem;
-    overflow: hidden;
-}
-
-.panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.7rem 1rem;
-    cursor: pointer;
-    user-select: none;
-    font-weight: 600;
-    font-size: 0.9rem;
-    background: #f9fafb;
-    border-bottom: 1px solid transparent;
-}
-
-.panel-header:hover {
-    background: #f0f4ff;
-}
-
-.panel-header .arrow {
-    transition: transform 0.2s;
-    font-size: 0.7rem;
-    color: #98a2b3;
-}
-
-.panel.open .panel-header {
-    border-bottom-color: #e4e7ec;
-}
-
-.panel.open .panel-header .arrow {
-    transform: rotate(90deg);
-}
-
-.panel-body {
-    display: none;
-    padding: 0.6rem 1rem;
-}
-
-.panel.open .panel-body {
-    display: block;
-}
-
-/* ---- Question Rows ---- */
-.question-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.45rem 0;
-    border-bottom: 1px solid #f2f4f7;
-    gap: 0.5rem;
-}
-
-.question-row:last-child {
-    border-bottom: none;
-}
-
-.question-row.sub-question {
-    padding-left: 1.2rem;
-    font-size: 0.85rem;
-    color: #475467;
-}
-
-.question-label {
-    flex: 1;
-    font-size: 0.88rem;
-}
-
-/* ---- Toggle Switch ---- */
-.toggle-group {
-    display: flex;
-    gap: 2px;
-    flex-shrink: 0;
-}
-
-.toggle-group button {
-    padding: 0.2rem 0.55rem;
-    border: 1.5px solid #d0d5dd;
-    background: white;
-    cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #667085;
-    transition: all 0.12s;
-}
-
-.toggle-group button:first-child {
-    border-radius: 4px 0 0 4px;
-}
-
-.toggle-group button:last-child {
-    border-radius: 0 4px 4px 0;
-}
-
-.toggle-group button.active-yes {
-    background: #dcfce7;
-    border-color: #16a34a;
-    color: #15803d;
-}
-
-.toggle-group button.active-no {
-    background: #fef2f2;
-    border-color: #dc2626;
-    color: #dc2626;
-}
-
-/* ---- Free text input within questions ---- */
-.inline-input {
-    width: 140px;
-    padding: 0.2rem 0.5rem;
-    border: 1.5px solid #d0d5dd;
-    border-radius: 4px;
-    font-size: 0.82rem;
-    flex-shrink: 0;
-}
-
-.inline-input:focus {
-    outline: none;
-    border-color: #2563eb;
-}
-
-/* Select dropdown */
-.inline-select {
-    padding: 0.2rem 0.4rem;
-    border: 1.5px solid #d0d5dd;
-    border-radius: 4px;
-    font-size: 0.82rem;
-    background: white;
-    flex-shrink: 0;
-}
-
-/* ---- Multi-select chips ---- */
-.chip-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-    flex-shrink: 0;
-}
-
-.chip {
-    padding: 0.2rem 0.5rem;
-    border: 1.5px solid #d0d5dd;
-    border-radius: 12px;
-    background: white;
-    cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: #667085;
-    transition: all 0.12s;
-}
-
-.chip.active {
-    background: #dbeafe;
-    border-color: #2563eb;
-    color: #1d4ed8;
-}
-
-/* ---- Buttons ---- */
-.action-bar {
-    display: flex;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.btn-primary {
-    padding: 0.7rem 1.5rem;
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.btn-primary:hover {
-    background: #1d4ed8;
-}
-
-.btn-secondary {
-    padding: 0.7rem 1.5rem;
-    background: white;
-    color: #344054;
-    border: 1.5px solid #d0d5dd;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.btn-secondary:hover {
-    background: #f9fafb;
-}
-
-/* ---- Note Output ---- */
-.note-output {
-    background: white;
-    border: 1.5px solid #e4e7ec;
-    border-radius: 8px;
-    padding: 1.2rem 1.5rem;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 0.9rem;
-    line-height: 1.7;
-    min-height: 200px;
-}
-
-/* ---- Toast notification ---- */
-.toast {
-    position: fixed;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1a1a2e;
-    color: white;
-    padding: 0.6rem 1.5rem;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    z-index: 1000;
-    animation: fadeInOut 2s ease;
-}
-
-@keyframes fadeInOut {
-    0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
-    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    85% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-}
-
-/* ---- Responsive ---- */
-@media (max-width: 600px) {
-    .complaint-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .question-row {
-        flex-wrap: wrap;
-    }
-
-    .toggle-group, .chip-group, .inline-input {
-        margin-top: 0.3rem;
-    }
-}
-    </style>
+</style>
 </head>
 <body>
-    <header>
-        <h1>ER Quick Notes</h1>
-        <p class="subtitle">Rapid clinical documentation for emergency physicians</p>
-    </header>
+<header>
+    <h1>ER Quick Notes</h1>
+    <p>Pick the complaint, tap what applies, copy the note. Nothing is saved or sent anywhere.</p>
+</header>
 
-    <main>
-        <!-- Step 1: Chief Complaint Selection -->
-        <section id="complaint-section">
-            <h2>Chief Complaint</h2>
-            <div id="complaint-grid" class="complaint-grid"></div>
-        </section>
-
-        <!-- Step 2: Dynamic Question Sections -->
-        <section id="questions-section" class="hidden">
-            <div class="selected-complaint-bar">
-                <span id="selected-complaint-label"></span>
-                <button id="change-complaint-btn" class="btn-small">Change</button>
+<div class="layout">
+    <main id="form-col">
+        <div class="card">
+            <div class="patient">
+                <div class="field">
+                    <label for="age-input">Age (years)</label>
+                    <input id="age-input" type="number" min="0" max="120" inputmode="numeric" placeholder="e.g. 58">
+                </div>
+                <div class="field">
+                    <label>Sex</label>
+                    <div class="tog" id="sex-tog">
+                        <button type="button" data-sex="M">Male</button>
+                        <button type="button" data-sex="F">Female</button>
+                    </div>
+                </div>
+                <div class="field grow">
+                    <label for="story-input">Free text for the HPI (optional)</label>
+                    <input id="story-input" type="text" placeholder="e.g. Started while climbing stairs this morning">
+                </div>
             </div>
+        </div>
 
-            <!-- Free text for onset/context -->
-            <div class="context-box">
-                <label for="context-input">Brief context (age/sex, onset, duration):</label>
-                <input type="text" id="context-input" placeholder='e.g. "45M, sudden onset 2hrs ago, at rest"'>
+        <div class="card" id="picker">
+            <div class="card-head"><h2>Chief complaint</h2></div>
+            <div class="complaint-grid" id="complaint-grid"></div>
+        </div>
+
+        <div id="questions" class="hidden">
+            <div class="cc-bar">
+                <strong id="cc-name"></strong>
+                <div>
+                    <button type="button" class="btn-ghost" id="change-btn">Change complaint</button>
+                    <button type="button" class="btn-ghost" id="new-btn">New patient</button>
+                </div>
             </div>
-
-            <div id="question-panels"></div>
-
-            <div class="action-bar">
-                <button id="generate-note-btn" class="btn-primary">Generate Note</button>
-                <button id="clear-all-btn" class="btn-secondary">Clear All</button>
-            </div>
-        </section>
-
-        <!-- Step 3: Generated Note -->
-        <section id="note-section" class="hidden">
-            <h2>Generated Note</h2>
-            <div id="note-output" class="note-output"></div>
-            <div class="action-bar">
-                <button id="copy-note-btn" class="btn-primary">Copy to Clipboard</button>
-                <button id="edit-questions-btn" class="btn-secondary">Back to Questions</button>
-            </div>
-        </section>
+            <p class="tip">A symptom or history item you leave blank is written as absent. Exam findings are written only if you mark them.</p>
+            <div id="panels"></div>
+        </div>
     </main>
 
-    <script>
-// ============================================================
-// complaints.js — Clinical question data (inline)
-// ============================================================
-const COMPLAINTS = [
-{
-    id: "chest_pain",
-    name: "Chest Pain",
-    emoji: "\u{1FAC0}",
-    sections: [
-        {
-            title: "Pain Characteristics",
-            questions: [
-                { id: "cp_location", label: "Location", type: "chips", options: ["Substernal","Left-sided","Right-sided","Diffuse","Epigastric"], noteLabel: "Location" },
-                { id: "cp_quality", label: "Quality", type: "chips", options: ["Sharp","Pressure","Squeezing","Tearing","Burning","Pleuritic"], noteLabel: "Quality" },
-                { id: "cp_severity", label: "Severity (1-10)", type: "select", options: ["1","2","3","4","5","6","7","8","9","10"] },
-                { id: "cp_radiation", label: "Radiation", type: "chips", options: ["Left arm","Right arm","Jaw","Back","Neck","None"] },
-                { id: "cp_onset", label: "Onset", type: "chips", options: ["Sudden","Gradual"] },
-                { id: "cp_duration", label: "Duration", type: "text", placeholder: "e.g. 2 hours" },
-                { id: "cp_exertional", label: "Exertional", type: "yesno" },
-                { id: "cp_at_rest", label: "Present at rest", type: "yesno" },
-                { id: "cp_positional", label: "Positional / pleuritic component", type: "yesno" },
-            ]
-        },
-        {
-            title: "Associated Symptoms",
-            questions: [
-                { id: "cp_dyspnea", label: "Shortness of breath", type: "yesno" },
-                { id: "cp_diaphoresis", label: "Diaphoresis", type: "yesno" },
-                { id: "cp_nausea", label: "Nausea / vomiting", type: "yesno" },
-                { id: "cp_palpitations", label: "Palpitations", type: "yesno" },
-                { id: "cp_syncope", label: "Syncope / presyncope", type: "yesno" },
-                { id: "cp_cough", label: "Cough", type: "yesno" },
-                { id: "cp_leg_swelling", label: "Leg swelling / pain", type: "yesno" },
-            ]
-        },
-        {
-            title: "Risk Factors",
-            questions: [
-                { id: "cp_htn", label: "Hypertension", type: "yesno" },
-                { id: "cp_dm", label: "Diabetes", type: "yesno" },
-                { id: "cp_smoker", label: "Smoker", type: "yesno" },
-                { id: "cp_hyperlipidemia", label: "Hyperlipidemia", type: "yesno" },
-                { id: "cp_fhx_cad", label: "Family history of CAD", type: "yesno" },
-                { id: "cp_prior_cad", label: "Known CAD / prior MI / stents", type: "yesno" },
-                { id: "cp_cocaine", label: "Cocaine / stimulant use", type: "yesno" },
-                { id: "cp_dvt_risk", label: "DVT/PE risk factors (immobility, OCP, recent surgery, cancer)", type: "yesno" },
-            ]
-        },
-        {
-            title: "Pertinent Negatives",
-            questions: [
-                { id: "cp_no_trauma", label: "No recent trauma", type: "yesno" },
-                { id: "cp_no_fever", label: "No fever", type: "yesno" },
-                { id: "cp_no_abd_pain", label: "No abdominal pain", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "abdominal_pain",
-    name: "Abdominal Pain",
-    emoji: "\u{1F922}",
-    sections: [
-        {
-            title: "Pain Characteristics",
-            questions: [
-                { id: "ab_location", label: "Location", type: "chips", options: ["RUQ","Epigastric","LUQ","Periumbilical","RLQ","LLQ","Suprapubic","Diffuse","Flank"] },
-                { id: "ab_quality", label: "Quality", type: "chips", options: ["Crampy","Sharp","Dull","Burning","Colicky"] },
-                { id: "ab_severity", label: "Severity (1-10)", type: "select", options: ["1","2","3","4","5","6","7","8","9","10"] },
-                { id: "ab_onset", label: "Onset", type: "chips", options: ["Sudden","Gradual"] },
-                { id: "ab_duration", label: "Duration", type: "text", placeholder: "e.g. 6 hours" },
-                { id: "ab_constant", label: "Constant vs intermittent", type: "chips", options: ["Constant","Intermittent"] },
-                { id: "ab_migration", label: "Pain migrated", type: "yesno", sub: [
-                    { id: "ab_migration_desc", label: "From \u2192 To", type: "text", placeholder: "e.g. periumbilical \u2192 RLQ" }
-                ]},
-                { id: "ab_worse_food", label: "Worse with eating", type: "yesno" },
-            ]
-        },
-        {
-            title: "GI Symptoms",
-            questions: [
-                { id: "ab_nausea", label: "Nausea", type: "yesno" },
-                { id: "ab_vomiting", label: "Vomiting", type: "yesno", sub: [
-                    { id: "ab_vomit_content", label: "Content", type: "chips", options: ["Food","Bile","Blood","Coffee-ground"] },
-                    { id: "ab_vomit_freq", label: "Frequency", type: "text", placeholder: "e.g. 3 episodes" },
-                ]},
-                { id: "ab_diarrhea", label: "Diarrhea", type: "yesno", sub: [
-                    { id: "ab_diarrhea_blood", label: "Bloody", type: "yesno" },
-                    { id: "ab_diarrhea_freq", label: "Frequency", type: "text", placeholder: "e.g. 5x/day" },
-                ]},
-                { id: "ab_constipation", label: "Constipation", type: "yesno", sub: [
-                    { id: "ab_last_bm", label: "Last BM", type: "text", placeholder: "e.g. 3 days ago" },
-                ]},
-                { id: "ab_flatus", label: "Passing flatus", type: "yesno" },
-                { id: "ab_melena", label: "Melena / dark stools", type: "yesno" },
-                { id: "ab_appetite", label: "Decreased appetite", type: "yesno" },
-            ]
-        },
-        {
-            title: "Urinary Symptoms",
-            questions: [
-                { id: "ab_uri_sx", label: "Any urinary symptoms", type: "yesno", sub: [
-                    { id: "ab_dysuria", label: "Dysuria", type: "yesno" },
-                    { id: "ab_frequency", label: "Frequency", type: "yesno" },
-                    { id: "ab_hematuria", label: "Hematuria", type: "yesno" },
-                    { id: "ab_uri_urgency", label: "Urgency", type: "yesno" },
-                ]},
-            ]
-        },
-        {
-            title: "GYN (if applicable)",
-            questions: [
-                { id: "ab_gyn_applicable", label: "Female patient \u2014 GYN review", type: "yesno", sub: [
-                    { id: "ab_lmp", label: "LMP", type: "text", placeholder: "Date or 'regular'" },
-                    { id: "ab_pregnant", label: "Possible pregnancy", type: "yesno" },
-                    { id: "ab_vaginal_bleeding", label: "Vaginal bleeding", type: "yesno" },
-                    { id: "ab_vaginal_discharge", label: "Vaginal discharge", type: "yesno" },
-                ]},
-            ]
-        },
-        {
-            title: "Systemic / Red Flags",
-            questions: [
-                { id: "ab_fever", label: "Fever", type: "yesno" },
-                { id: "ab_weight_loss", label: "Unintentional weight loss", type: "yesno" },
-                { id: "ab_prior_surgery", label: "Prior abdominal surgery", type: "yesno", sub: [
-                    { id: "ab_surgery_desc", label: "Which surgery", type: "text", placeholder: "" }
-                ]},
-                { id: "ab_hx_similar", label: "History of similar episodes", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "sob",
-    name: "Shortness of Breath",
-    emoji: "\u{1FAC1}",
-    sections: [
-        {
-            title: "Dyspnea Characteristics",
-            questions: [
-                { id: "sob_onset", label: "Onset", type: "chips", options: ["Sudden","Gradual","Worsening over days"] },
-                { id: "sob_duration", label: "Duration", type: "text", placeholder: "e.g. 3 days" },
-                { id: "sob_at_rest", label: "At rest", type: "yesno" },
-                { id: "sob_exertional", label: "On exertion", type: "yesno" },
-                { id: "sob_orthopnea", label: "Orthopnea", type: "yesno" },
-                { id: "sob_pnd", label: "PND (paroxysmal nocturnal dyspnea)", type: "yesno" },
-                { id: "sob_severity", label: "Severity", type: "chips", options: ["Mild","Moderate","Severe"] },
-            ]
-        },
-        {
-            title: "Associated Symptoms",
-            questions: [
-                { id: "sob_cough", label: "Cough", type: "yesno", sub: [
-                    { id: "sob_cough_prod", label: "Productive", type: "yesno" },
-                    { id: "sob_sputum", label: "Sputum color", type: "chips", options: ["Clear","Yellow","Green","Blood-tinged","Pink/frothy"] },
-                ]},
-                { id: "sob_chest_pain", label: "Chest pain", type: "yesno" },
-                { id: "sob_wheeze", label: "Wheezing", type: "yesno" },
-                { id: "sob_fever", label: "Fever", type: "yesno" },
-                { id: "sob_leg_swelling", label: "Leg swelling", type: "yesno" },
-                { id: "sob_leg_pain", label: "Calf / leg pain", type: "yesno" },
-                { id: "sob_palpitations", label: "Palpitations", type: "yesno" },
-            ]
-        },
-        {
-            title: "History",
-            questions: [
-                { id: "sob_asthma", label: "Known asthma / COPD", type: "yesno" },
-                { id: "sob_chf", label: "Known CHF", type: "yesno" },
-                { id: "sob_recent_immobil", label: "Recent immobilization / travel / surgery", type: "yesno" },
-                { id: "sob_cancer", label: "Known malignancy", type: "yesno" },
-                { id: "sob_smoking", label: "Smoking history", type: "yesno" },
-                { id: "sob_ocp", label: "OCP / hormone use", type: "yesno" },
-                { id: "sob_prior_dvt", label: "Prior DVT / PE", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "headache",
-    name: "Headache",
-    emoji: "\u{1F9E0}",
-    sections: [
-        {
-            title: "Headache Characteristics",
-            questions: [
-                { id: "ha_onset", label: "Onset", type: "chips", options: ["Thunderclap/sudden","Gradual","Worsening"] },
-                { id: "ha_location", label: "Location", type: "chips", options: ["Frontal","Temporal","Occipital","Unilateral","Bilateral","Global"] },
-                { id: "ha_quality", label: "Quality", type: "chips", options: ["Throbbing","Pressure","Sharp","Band-like"] },
-                { id: "ha_severity", label: "Severity (1-10)", type: "select", options: ["1","2","3","4","5","6","7","8","9","10"] },
-                { id: "ha_duration", label: "Duration", type: "text", placeholder: "e.g. 2 days" },
-                { id: "ha_worst_ever", label: "Worst headache of life", type: "yesno" },
-            ]
-        },
-        {
-            title: "Red Flag Symptoms",
-            questions: [
-                { id: "ha_fever", label: "Fever", type: "yesno" },
-                { id: "ha_neck_stiff", label: "Neck stiffness", type: "yesno" },
-                { id: "ha_neuro_deficit", label: "Focal neurological deficit", type: "yesno", sub: [
-                    { id: "ha_neuro_desc", label: "Describe", type: "text", placeholder: "e.g. left arm weakness" }
-                ]},
-                { id: "ha_vision_change", label: "Vision changes", type: "yesno", sub: [
-                    { id: "ha_vision_desc", label: "Describe", type: "text", placeholder: "e.g. blurry, diplopia, loss" }
-                ]},
-                { id: "ha_seizure", label: "Seizure", type: "yesno" },
-                { id: "ha_confusion", label: "Confusion / AMS", type: "yesno" },
-                { id: "ha_syncope", label: "Syncope", type: "yesno" },
-                { id: "ha_trauma", label: "Recent head trauma", type: "yesno" },
-                { id: "ha_wakes_sleep", label: "Wakes from sleep", type: "yesno" },
-            ]
-        },
-        {
-            title: "Associated Symptoms",
-            questions: [
-                { id: "ha_nausea", label: "Nausea / vomiting", type: "yesno" },
-                { id: "ha_photophobia", label: "Photophobia", type: "yesno" },
-                { id: "ha_phonophobia", label: "Phonophobia", type: "yesno" },
-                { id: "ha_aura", label: "Aura", type: "yesno" },
-            ]
-        },
-        {
-            title: "History",
-            questions: [
-                { id: "ha_hx_migraine", label: "Known migraines", type: "yesno" },
-                { id: "ha_similar_prior", label: "Similar to prior headaches", type: "yesno" },
-                { id: "ha_anticoag", label: "On anticoagulation", type: "yesno" },
-                { id: "ha_immunocomp", label: "Immunocompromised", type: "yesno" },
-                { id: "ha_age_over50", label: "Age > 50 with new headache", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "back_pain",
-    name: "Back Pain",
-    emoji: "\u{1F9B4}",
-    sections: [
-        {
-            title: "Pain Characteristics",
-            questions: [
-                { id: "bp_location", label: "Location", type: "chips", options: ["Cervical","Thoracic","Lumbar","Sacral","Flank"] },
-                { id: "bp_quality", label: "Quality", type: "chips", options: ["Sharp","Dull","Aching","Radiating","Spasm"] },
-                { id: "bp_severity", label: "Severity (1-10)", type: "select", options: ["1","2","3","4","5","6","7","8","9","10"] },
-                { id: "bp_onset", label: "Onset", type: "chips", options: ["Sudden","Gradual","After lifting/twisting"] },
-                { id: "bp_duration", label: "Duration", type: "text", placeholder: "" },
-                { id: "bp_radiation_legs", label: "Radiation to legs", type: "yesno", sub: [
-                    { id: "bp_radiculopathy_side", label: "Which side", type: "chips", options: ["Left","Right","Bilateral"] },
-                ]},
-            ]
-        },
-        {
-            title: "Red Flags (Cauda Equina / Serious)",
-            questions: [
-                { id: "bp_saddle_anesth", label: "Saddle anesthesia", type: "yesno" },
-                { id: "bp_urinary_retention", label: "Urinary retention / incontinence", type: "yesno" },
-                { id: "bp_bowel_incont", label: "Bowel incontinence", type: "yesno" },
-                { id: "bp_weakness", label: "Leg weakness", type: "yesno", sub: [
-                    { id: "bp_weakness_desc", label: "Describe", type: "text", placeholder: "e.g. foot drop, bilateral" }
-                ]},
-                { id: "bp_fever", label: "Fever", type: "yesno" },
-                { id: "bp_weight_loss", label: "Unintentional weight loss", type: "yesno" },
-                { id: "bp_cancer_hx", label: "History of cancer", type: "yesno" },
-                { id: "bp_ivdu", label: "IV drug use", type: "yesno" },
-                { id: "bp_trauma", label: "Trauma", type: "yesno" },
-            ]
-        },
-        {
-            title: "Associated Symptoms",
-            questions: [
-                { id: "bp_numbness", label: "Numbness / tingling", type: "yesno" },
-                { id: "bp_uri_sx", label: "Urinary symptoms", type: "yesno" },
-                { id: "bp_abd_pain", label: "Abdominal pain", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "fever",
-    name: "Fever",
-    emoji: "\u{1F321}\uFE0F",
-    sections: [
-        {
-            title: "Fever Details",
-            questions: [
-                { id: "fv_temp", label: "Max temp / measured?", type: "text", placeholder: "e.g. 39.2\u00B0C at home" },
-                { id: "fv_duration", label: "Duration", type: "text", placeholder: "e.g. 2 days" },
-                { id: "fv_pattern", label: "Pattern", type: "chips", options: ["Constant","Intermittent","Worsening"] },
-                { id: "fv_chills", label: "Chills / rigors", type: "yesno" },
-                { id: "fv_night_sweats", label: "Night sweats", type: "yesno" },
-            ]
-        },
-        {
-            title: "Source Review",
-            questions: [
-                { id: "fv_respiratory", label: "Respiratory symptoms (cough, SOB, sore throat)", type: "yesno", sub: [
-                    { id: "fv_resp_detail", label: "Detail", type: "text", placeholder: "e.g. productive cough x3d" }
-                ]},
-                { id: "fv_uri_sx", label: "Urinary symptoms", type: "yesno", sub: [
-                    { id: "fv_uri_detail", label: "Detail", type: "text", placeholder: "e.g. dysuria, frequency" }
-                ]},
-                { id: "fv_gi_sx", label: "GI symptoms (N/V/D, abd pain)", type: "yesno", sub: [
-                    { id: "fv_gi_detail", label: "Detail", type: "text", placeholder: "" }
-                ]},
-                { id: "fv_skin_sx", label: "Skin/wound infection signs", type: "yesno", sub: [
-                    { id: "fv_skin_detail", label: "Detail", type: "text", placeholder: "e.g. redness left leg" }
-                ]},
-                { id: "fv_headache", label: "Headache", type: "yesno" },
-                { id: "fv_neck_stiff", label: "Neck stiffness", type: "yesno" },
-                { id: "fv_rash", label: "Rash", type: "yesno" },
-                { id: "fv_joint_pain", label: "Joint pain / swelling", type: "yesno" },
-            ]
-        },
-        {
-            title: "History / Risk",
-            questions: [
-                { id: "fv_immunocomp", label: "Immunocompromised", type: "yesno" },
-                { id: "fv_recent_travel", label: "Recent travel", type: "yesno" },
-                { id: "fv_recent_abx", label: "Recent antibiotics", type: "yesno" },
-                { id: "fv_recent_surgery", label: "Recent surgery / procedure", type: "yesno" },
-                { id: "fv_indwelling_device", label: "Indwelling device (catheter, line, prosthetic)", type: "yesno" },
-                { id: "fv_sick_contacts", label: "Sick contacts", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "cough",
-    name: "Cough",
-    emoji: "\u{1F637}",
-    sections: [
-        {
-            title: "Cough Characteristics",
-            questions: [
-                { id: "co_duration", label: "Duration", type: "text", placeholder: "e.g. 5 days" },
-                { id: "co_productive", label: "Productive", type: "yesno", sub: [
-                    { id: "co_sputum_color", label: "Sputum color", type: "chips", options: ["Clear","Yellow","Green","Blood-tinged","Rust-colored"] },
-                ]},
-                { id: "co_hemoptysis", label: "Hemoptysis", type: "yesno" },
-                { id: "co_timing", label: "Timing", type: "chips", options: ["Constant","Nocturnal","Positional","Post-nasal drip"] },
-                { id: "co_worsening", label: "Worsening", type: "yesno" },
-            ]
-        },
-        {
-            title: "Associated Symptoms",
-            questions: [
-                { id: "co_fever", label: "Fever", type: "yesno" },
-                { id: "co_sob", label: "Shortness of breath", type: "yesno" },
-                { id: "co_chest_pain", label: "Chest pain", type: "yesno" },
-                { id: "co_wheeze", label: "Wheezing", type: "yesno" },
-                { id: "co_sore_throat", label: "Sore throat", type: "yesno" },
-                { id: "co_nasal_congest", label: "Nasal congestion / rhinorrhea", type: "yesno" },
-                { id: "co_myalgias", label: "Myalgias / body aches", type: "yesno" },
-                { id: "co_weight_loss", label: "Unintentional weight loss", type: "yesno" },
-            ]
-        },
-        {
-            title: "History",
-            questions: [
-                { id: "co_smoking", label: "Smoking history", type: "yesno" },
-                { id: "co_asthma", label: "Known asthma / COPD", type: "yesno" },
-                { id: "co_sick_contacts", label: "Sick contacts", type: "yesno" },
-                { id: "co_tb_risk", label: "TB risk (travel, exposure, homeless)", type: "yesno" },
-                { id: "co_immunocomp", label: "Immunocompromised", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "dizziness",
-    name: "Dizziness / Vertigo",
-    emoji: "\u{1F635}",
-    sections: [
-        {
-            title: "Dizziness Characteristics",
-            questions: [
-                { id: "dz_type", label: "Type", type: "chips", options: ["Room spinning (vertigo)","Lightheaded","Unsteady/off-balance","Near-syncope"] },
-                { id: "dz_onset", label: "Onset", type: "chips", options: ["Sudden","Gradual"] },
-                { id: "dz_duration", label: "Duration per episode", type: "text", placeholder: "e.g. seconds, minutes, hours" },
-                { id: "dz_constant", label: "Constant vs episodic", type: "chips", options: ["Constant","Episodic"] },
-                { id: "dz_positional", label: "Positional (worse with head turning)", type: "yesno" },
-                { id: "dz_first_episode", label: "First episode", type: "yesno" },
-            ]
-        },
-        {
-            title: "Red Flag / Central Symptoms",
-            questions: [
-                { id: "dz_neuro_deficit", label: "Focal neurological deficit", type: "yesno", sub: [
-                    { id: "dz_neuro_desc", label: "Describe", type: "text", placeholder: "weakness, numbness, speech" }
-                ]},
-                { id: "dz_diplopia", label: "Diplopia", type: "yesno" },
-                { id: "dz_dysarthria", label: "Dysarthria / speech difficulty", type: "yesno" },
-                { id: "dz_dysphagia", label: "Dysphagia", type: "yesno" },
-                { id: "dz_headache", label: "Severe headache", type: "yesno" },
-                { id: "dz_ataxia", label: "Gait ataxia / unable to walk", type: "yesno" },
-                { id: "dz_hearing_loss", label: "Hearing loss", type: "yesno" },
-                { id: "dz_tinnitus", label: "Tinnitus", type: "yesno" },
-            ]
-        },
-        {
-            title: "Associated Symptoms",
-            questions: [
-                { id: "dz_nausea", label: "Nausea / vomiting", type: "yesno" },
-                { id: "dz_chest_pain", label: "Chest pain", type: "yesno" },
-                { id: "dz_palpitations", label: "Palpitations", type: "yesno" },
-            ]
-        },
-        {
-            title: "History",
-            questions: [
-                { id: "dz_hx_vertigo", label: "Prior episodes of vertigo", type: "yesno" },
-                { id: "dz_vascular_rf", label: "Vascular risk factors (HTN, DM, smoking)", type: "yesno" },
-                { id: "dz_anticoag", label: "On anticoagulation", type: "yesno" },
-                { id: "dz_recent_uri", label: "Recent URI / ear infection", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "extremity_pain",
-    name: "Extremity Pain / Injury",
-    emoji: "\u{1F9B5}",
-    sections: [
-        {
-            title: "Injury / Pain Details",
-            questions: [
-                { id: "ex_location", label: "Location", type: "text", placeholder: "e.g. right ankle" },
-                { id: "ex_mechanism", label: "Mechanism", type: "chips", options: ["Fall","Twist/sprain","Direct blow","Overuse","No trauma"] },
-                { id: "ex_severity", label: "Severity (1-10)", type: "select", options: ["1","2","3","4","5","6","7","8","9","10"] },
-                { id: "ex_weight_bear", label: "Able to bear weight", type: "yesno" },
-                { id: "ex_deformity", label: "Obvious deformity", type: "yesno" },
-                { id: "ex_swelling", label: "Swelling", type: "yesno" },
-            ]
-        },
-        {
-            title: "Neurovascular",
-            questions: [
-                { id: "ex_sensation", label: "Sensation intact distally", type: "yesno" },
-                { id: "ex_movement", label: "Movement intact distally", type: "yesno" },
-                { id: "ex_pulses", label: "Pulses intact distally", type: "yesno" },
-                { id: "ex_open_wound", label: "Open wound over injury", type: "yesno" },
-            ]
-        },
-        {
-            title: "Non-traumatic Considerations",
-            questions: [
-                { id: "ex_atraumatic", label: "Non-traumatic pain", type: "yesno", sub: [
-                    { id: "ex_redness_warmth", label: "Redness / warmth of joint", type: "yesno" },
-                    { id: "ex_unilateral_leg_swelling", label: "Unilateral leg swelling (DVT concern)", type: "yesno" },
-                    { id: "ex_fever", label: "Fever", type: "yesno" },
-                    { id: "ex_gout_hx", label: "History of gout", type: "yesno" },
-                ]},
-            ]
-        }
-    ]
-},
-{
-    id: "laceration",
-    name: "Laceration / Wound",
-    emoji: "\u{1FA79}",
-    sections: [
-        {
-            title: "Wound Details",
-            questions: [
-                { id: "lac_location", label: "Location", type: "text", placeholder: "e.g. left forearm" },
-                { id: "lac_mechanism", label: "Mechanism", type: "chips", options: ["Knife/sharp","Glass","Fall","Bite","Crush","Other"] },
-                { id: "lac_length", label: "Length (cm)", type: "text", placeholder: "e.g. 4 cm" },
-                { id: "lac_depth", label: "Depth", type: "chips", options: ["Superficial","Subcutaneous","Deep/muscle","To bone"] },
-                { id: "lac_contamination", label: "Contaminated / dirty", type: "yesno" },
-                { id: "lac_time_injury", label: "Time since injury", type: "text", placeholder: "e.g. 2 hours" },
-            ]
-        },
-        {
-            title: "Neurovascular / Function",
-            questions: [
-                { id: "lac_sensation", label: "Sensation intact distal to wound", type: "yesno" },
-                { id: "lac_motor", label: "Motor function intact", type: "yesno" },
-                { id: "lac_bleeding_controlled", label: "Bleeding controlled", type: "yesno" },
-                { id: "lac_tendon_visible", label: "Tendon / bone visible", type: "yesno" },
-                { id: "lac_foreign_body", label: "Possible foreign body", type: "yesno" },
-            ]
-        },
-        {
-            title: "Tetanus / Infection Risk",
-            questions: [
-                { id: "lac_tetanus", label: "Tetanus up to date", type: "yesno" },
-                { id: "lac_immunocomp", label: "Immunocompromised / diabetic", type: "yesno" },
-                { id: "lac_bite", label: "Bite wound", type: "yesno", sub: [
-                    { id: "lac_bite_type", label: "Animal type", type: "text", placeholder: "e.g. dog, cat, human" }
-                ]},
-            ]
-        }
-    ]
-},
-{
-    id: "nausea_vomiting",
-    name: "Nausea / Vomiting",
-    emoji: "\u{1F92E}",
-    sections: [
-        {
-            title: "Vomiting Details",
-            questions: [
-                { id: "nv_onset", label: "Onset", type: "text", placeholder: "e.g. 12 hours ago" },
-                { id: "nv_frequency", label: "Frequency", type: "text", placeholder: "e.g. 6 episodes" },
-                { id: "nv_content", label: "Content", type: "chips", options: ["Food","Bile","Blood","Coffee-ground","Feculent"] },
-                { id: "nv_tolerating_po", label: "Tolerating PO", type: "yesno" },
-            ]
-        },
-        {
-            title: "Associated Symptoms",
-            questions: [
-                { id: "nv_abd_pain", label: "Abdominal pain", type: "yesno", sub: [
-                    { id: "nv_abd_location", label: "Location", type: "chips", options: ["Epigastric","RUQ","Diffuse","RLQ","LLQ","Suprapubic"] },
-                ]},
-                { id: "nv_diarrhea", label: "Diarrhea", type: "yesno" },
-                { id: "nv_fever", label: "Fever", type: "yesno" },
-                { id: "nv_headache", label: "Headache", type: "yesno" },
-                { id: "nv_dizziness", label: "Dizziness", type: "yesno" },
-                { id: "nv_chest_pain", label: "Chest pain", type: "yesno" },
-            ]
-        },
-        {
-            title: "Context",
-            questions: [
-                { id: "nv_food_related", label: "Related to food ingestion", type: "yesno" },
-                { id: "nv_sick_contacts", label: "Sick contacts", type: "yesno" },
-                { id: "nv_pregnancy_possible", label: "Pregnancy possible", type: "yesno" },
-                { id: "nv_medications", label: "New medications", type: "yesno" },
-                { id: "nv_dm", label: "Diabetic (DKA concern)", type: "yesno" },
-                { id: "nv_prior_surgery", label: "Prior abdominal surgery", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "allergic_reaction",
-    name: "Allergic Reaction",
-    emoji: "\u26A0\uFE0F",
-    sections: [
-        {
-            title: "Reaction Details",
-            questions: [
-                { id: "ar_trigger", label: "Suspected trigger", type: "text", placeholder: "e.g. peanuts, medication, bee sting" },
-                { id: "ar_time_exposure", label: "Time since exposure", type: "text", placeholder: "e.g. 30 minutes" },
-                { id: "ar_prior_similar", label: "Prior similar reaction", type: "yesno" },
-                { id: "ar_epi_given", label: "Epinephrine given pre-arrival", type: "yesno" },
-            ]
-        },
-        {
-            title: "Symptoms \u2014 Anaphylaxis Criteria",
-            questions: [
-                { id: "ar_skin", label: "Skin: hives, flushing, angioedema", type: "yesno", sub: [
-                    { id: "ar_skin_desc", label: "Detail", type: "chips", options: ["Urticaria","Angioedema (lip/tongue)","Flushing","Pruritus"] },
-                ]},
-                { id: "ar_respiratory", label: "Respiratory: SOB, wheeze, stridor, throat tightness", type: "yesno", sub: [
-                    { id: "ar_resp_desc", label: "Detail", type: "chips", options: ["Wheeze","Stridor","Throat tightness","Dyspnea","Hoarse voice"] },
-                ]},
-                { id: "ar_gi", label: "GI: nausea, vomiting, diarrhea, cramping", type: "yesno" },
-                { id: "ar_cardiovascular", label: "Cardiovascular: hypotension, syncope, dizziness", type: "yesno" },
-            ]
-        },
-        {
-            title: "History",
-            questions: [
-                { id: "ar_known_allergies", label: "Known allergies", type: "text", placeholder: "" },
-                { id: "ar_has_epipen", label: "Carries EpiPen", type: "yesno" },
-                { id: "ar_asthma", label: "Asthma", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "syncope",
-    name: "Syncope",
-    emoji: "\u{1F4AB}",
-    sections: [
-        {
-            title: "Event Details",
-            questions: [
-                { id: "sy_true_loc", label: "True loss of consciousness", type: "yesno" },
-                { id: "sy_duration_loc", label: "Duration of LOC", type: "text", placeholder: "e.g. <1 minute" },
-                { id: "sy_position", label: "Position at onset", type: "chips", options: ["Standing","Sitting","Supine","Exertional"] },
-                { id: "sy_prodrome", label: "Prodrome (lightheaded, warm, tunnel vision)", type: "yesno" },
-                { id: "sy_witnessed", label: "Witnessed event", type: "yesno" },
-            ]
-        },
-        {
-            title: "Concerning Features",
-            questions: [
-                { id: "sy_exertional", label: "During exertion", type: "yesno" },
-                { id: "sy_chest_pain", label: "Chest pain before/after", type: "yesno" },
-                { id: "sy_palpitations", label: "Palpitations before event", type: "yesno" },
-                { id: "sy_seizure_activity", label: "Seizure-like activity (shaking, tongue bite, incontinence)", type: "yesno" },
-                { id: "sy_head_injury", label: "Head injury from fall", type: "yesno" },
-                { id: "sy_prolonged_confusion", label: "Prolonged confusion post-event", type: "yesno" },
-                { id: "sy_neuro_deficit", label: "Focal neurological deficit", type: "yesno" },
-            ]
-        },
-        {
-            title: "History / Risk",
-            questions: [
-                { id: "sy_cardiac_hx", label: "Known cardiac disease", type: "yesno" },
-                { id: "sy_fhx_sudden_death", label: "Family hx sudden cardiac death", type: "yesno" },
-                { id: "sy_prior_syncope", label: "Prior syncope episodes", type: "yesno" },
-                { id: "sy_medications", label: "Medications (antihypertensives, antiarrhythmics, QT-prolonging)", type: "yesno" },
-                { id: "sy_dehydration", label: "Dehydrated / poor PO", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "sore_throat",
-    name: "Sore Throat",
-    emoji: "\u{1F5E3}\uFE0F",
-    sections: [
-        {
-            title: "Throat Symptoms",
-            questions: [
-                { id: "st_duration", label: "Duration", type: "text", placeholder: "e.g. 3 days" },
-                { id: "st_severity", label: "Severity (1-10)", type: "select", options: ["1","2","3","4","5","6","7","8","9","10"] },
-                { id: "st_dysphagia", label: "Difficulty swallowing", type: "yesno" },
-                { id: "st_drooling", label: "Drooling / unable to swallow secretions", type: "yesno" },
-                { id: "st_voice_change", label: "Voice change / hot potato voice", type: "yesno" },
-                { id: "st_trismus", label: "Trismus (difficulty opening mouth)", type: "yesno" },
-            ]
-        },
-        {
-            title: "Associated Symptoms",
-            questions: [
-                { id: "st_fever", label: "Fever", type: "yesno" },
-                { id: "st_lymph", label: "Swollen lymph nodes", type: "yesno" },
-                { id: "st_cough", label: "Cough", type: "yesno" },
-                { id: "st_rhinorrhea", label: "Rhinorrhea / congestion", type: "yesno" },
-                { id: "st_rash", label: "Rash", type: "yesno" },
-                { id: "st_neck_swelling", label: "Neck swelling", type: "yesno" },
-                { id: "st_sob", label: "Shortness of breath / stridor", type: "yesno" },
-            ]
-        },
-        {
-            title: "Centor Criteria (Strep)",
-            questions: [
-                { id: "st_tonsillar_exudate", label: "Tonsillar exudate", type: "yesno" },
-                { id: "st_tender_ant_cervical", label: "Tender anterior cervical lymphadenopathy", type: "yesno" },
-                { id: "st_fever_centor", label: "Fever (>38\u00B0C)", type: "yesno" },
-                { id: "st_no_cough", label: "Absence of cough", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "urinary",
-    name: "Urinary Complaints",
-    emoji: "\u{1F6BD}",
-    sections: [
-        {
-            title: "Urinary Symptoms",
-            questions: [
-                { id: "ur_dysuria", label: "Dysuria (painful urination)", type: "yesno" },
-                { id: "ur_frequency", label: "Increased frequency", type: "yesno" },
-                { id: "ur_urgency", label: "Urgency", type: "yesno" },
-                { id: "ur_hematuria", label: "Hematuria", type: "yesno" },
-                { id: "ur_retention", label: "Difficulty voiding / retention", type: "yesno" },
-                { id: "ur_incontinence", label: "Incontinence", type: "yesno" },
-            ]
-        },
-        {
-            title: "Associated Symptoms",
-            questions: [
-                { id: "ur_flank_pain", label: "Flank / back pain", type: "yesno" },
-                { id: "ur_suprapubic_pain", label: "Suprapubic pain", type: "yesno" },
-                { id: "ur_fever", label: "Fever / chills", type: "yesno" },
-                { id: "ur_nausea", label: "Nausea / vomiting", type: "yesno" },
-                { id: "ur_vaginal_discharge", label: "Vaginal / urethral discharge", type: "yesno" },
-                { id: "ur_testicular_pain", label: "Testicular pain / swelling (if male)", type: "yesno" },
-            ]
-        },
-        {
-            title: "History",
-            questions: [
-                { id: "ur_recurrent_uti", label: "Recurrent UTIs", type: "yesno" },
-                { id: "ur_kidney_stones", label: "History of kidney stones", type: "yesno" },
-                { id: "ur_pregnant", label: "Pregnant or possibly pregnant", type: "yesno" },
-                { id: "ur_catheter", label: "Indwelling catheter", type: "yesno" },
-                { id: "ur_immunocomp", label: "Immunocompromised / diabetic", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "palpitations",
-    name: "Palpitations",
-    emoji: "\u{1F493}",
-    sections: [
-        {
-            title: "Palpitation Characteristics",
-            questions: [
-                { id: "pp_type", label: "Sensation", type: "chips", options: ["Rapid","Irregular","Skipping","Pounding","Fluttering"] },
-                { id: "pp_onset", label: "Onset", type: "chips", options: ["Sudden","Gradual"] },
-                { id: "pp_duration", label: "Duration", type: "text", placeholder: "e.g. intermittent, 2 hours" },
-                { id: "pp_at_rest", label: "At rest", type: "yesno" },
-                { id: "pp_exertional", label: "With exertion", type: "yesno" },
-                { id: "pp_still_occurring", label: "Still occurring now", type: "yesno" },
-            ]
-        },
-        {
-            title: "Associated Symptoms",
-            questions: [
-                { id: "pp_chest_pain", label: "Chest pain", type: "yesno" },
-                { id: "pp_sob", label: "Shortness of breath", type: "yesno" },
-                { id: "pp_syncope", label: "Syncope / presyncope", type: "yesno" },
-                { id: "pp_dizziness", label: "Dizziness", type: "yesno" },
-                { id: "pp_diaphoresis", label: "Diaphoresis", type: "yesno" },
-            ]
-        },
-        {
-            title: "History / Triggers",
-            questions: [
-                { id: "pp_caffeine", label: "Caffeine / energy drinks", type: "yesno" },
-                { id: "pp_stimulants", label: "Stimulants / drugs", type: "yesno" },
-                { id: "pp_known_arrhythmia", label: "Known arrhythmia", type: "yesno", sub: [
-                    { id: "pp_arrhythmia_type", label: "Type", type: "text", placeholder: "e.g. AFib, SVT" }
-                ]},
-                { id: "pp_thyroid", label: "Thyroid disease", type: "yesno" },
-                { id: "pp_cardiac_hx", label: "Structural heart disease", type: "yesno" },
-                { id: "pp_fhx_sudden_death", label: "Family hx sudden death / arrhythmia", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "seizure",
-    name: "Seizure",
-    emoji: "\u26A1",
-    sections: [
-        {
-            title: "Seizure Details",
-            questions: [
-                { id: "sz_witnessed", label: "Witnessed", type: "yesno" },
-                { id: "sz_type", label: "Type of activity", type: "chips", options: ["Generalized tonic-clonic","Focal","Absence","Unknown"] },
-                { id: "sz_duration", label: "Duration of seizure", type: "text", placeholder: "e.g. 2 minutes" },
-                { id: "sz_aura", label: "Aura / warning", type: "yesno" },
-                { id: "sz_post_ictal", label: "Post-ictal state", type: "yesno", sub: [
-                    { id: "sz_postictal_duration", label: "Duration of post-ictal", type: "text", placeholder: "" }
-                ]},
-                { id: "sz_tongue_bite", label: "Tongue bite", type: "yesno" },
-                { id: "sz_incontinence", label: "Urinary / fecal incontinence", type: "yesno" },
-                { id: "sz_multiple", label: "Multiple seizures", type: "yesno" },
-                { id: "sz_back_to_baseline", label: "Back to baseline now", type: "yesno" },
-            ]
-        },
-        {
-            title: "Possible Triggers",
-            questions: [
-                { id: "sz_med_noncompliance", label: "AED noncompliance", type: "yesno" },
-                { id: "sz_fever", label: "Fever / infection", type: "yesno" },
-                { id: "sz_sleep_deprivation", label: "Sleep deprivation", type: "yesno" },
-                { id: "sz_alcohol", label: "Alcohol use / withdrawal", type: "yesno" },
-                { id: "sz_drugs", label: "Drug use", type: "yesno" },
-                { id: "sz_head_trauma", label: "Recent head trauma", type: "yesno" },
-            ]
-        },
-        {
-            title: "History",
-            questions: [
-                { id: "sz_known_epilepsy", label: "Known epilepsy / seizure disorder", type: "yesno" },
-                { id: "sz_first_seizure", label: "First-time seizure", type: "yesno" },
-                { id: "sz_current_aed", label: "Current AED medications", type: "text", placeholder: "" },
-                { id: "sz_neuro_deficit", label: "Focal neurological deficit on exam", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "altered_mental_status",
-    name: "Altered Mental Status",
-    emoji: "\u{1F9E9}",
-    sections: [
-        {
-            title: "Mental Status Details",
-            questions: [
-                { id: "ams_baseline", label: "Baseline mental status", type: "chips", options: ["Alert & oriented","Mild cognitive impairment","Dementia","Unknown"] },
-                { id: "ams_current", label: "Current status", type: "chips", options: ["Confused","Lethargic","Obtunded","Unresponsive","Agitated"] },
-                { id: "ams_onset", label: "Onset", type: "chips", options: ["Acute (hours)","Subacute (days)","Waxing/waning","Unknown"] },
-                { id: "ams_gcs", label: "GCS (if applicable)", type: "text", placeholder: "e.g. E3V4M6 = 13" },
-            ]
-        },
-        {
-            title: "Potential Causes (AEIOU-TIPS)",
-            questions: [
-                { id: "ams_alcohol_drugs", label: "Alcohol / drugs / toxins", type: "yesno", sub: [
-                    { id: "ams_substance_desc", label: "Substance", type: "text", placeholder: "" }
-                ]},
-                { id: "ams_metabolic", label: "Metabolic (DM, renal, hepatic, thyroid)", type: "yesno" },
-                { id: "ams_infection", label: "Infection / sepsis (fever, source)", type: "yesno" },
-                { id: "ams_structural", label: "Structural (trauma, stroke, mass)", type: "yesno" },
-                { id: "ams_seizure", label: "Seizure / post-ictal", type: "yesno" },
-                { id: "ams_psych", label: "Psychiatric", type: "yesno" },
-                { id: "ams_medication", label: "Medication change / overdose", type: "yesno" },
-                { id: "ams_hypoxia", label: "Hypoxia / hypoperfusion", type: "yesno" },
-            ]
-        },
-        {
-            title: "Associated Findings",
-            questions: [
-                { id: "ams_fever", label: "Fever", type: "yesno" },
-                { id: "ams_neuro_deficit", label: "Focal neurological deficit", type: "yesno" },
-                { id: "ams_neck_stiff", label: "Neck stiffness", type: "yesno" },
-                { id: "ams_trauma_signs", label: "Signs of trauma", type: "yesno" },
-                { id: "ams_pupils", label: "Pupil abnormality", type: "yesno", sub: [
-                    { id: "ams_pupil_desc", label: "Describe", type: "text", placeholder: "e.g. pinpoint, dilated, asymmetric" }
-                ]},
-            ]
-        }
-    ]
-},
-{
-    id: "rash",
-    name: "Rash",
-    emoji: "\u{1F534}",
-    sections: [
-        {
-            title: "Rash Characteristics",
-            questions: [
-                { id: "ra_location", label: "Location / distribution", type: "text", placeholder: "e.g. trunk, bilateral lower extremities" },
-                { id: "ra_type", label: "Type", type: "chips", options: ["Macular","Papular","Vesicular","Petechial/Purpuric","Urticarial","Bullous","Erythematous patch"] },
-                { id: "ra_onset", label: "Onset", type: "text", placeholder: "e.g. 2 days ago" },
-                { id: "ra_spreading", label: "Spreading", type: "yesno" },
-                { id: "ra_pruritic", label: "Pruritic", type: "yesno" },
-                { id: "ra_painful", label: "Painful", type: "yesno" },
-                { id: "ra_blanching", label: "Blanching", type: "yesno" },
-            ]
-        },
-        {
-            title: "Red Flags",
-            questions: [
-                { id: "ra_fever", label: "Fever", type: "yesno" },
-                { id: "ra_mucosal", label: "Mucosal involvement (mouth, eyes, genitals)", type: "yesno" },
-                { id: "ra_skin_sloughing", label: "Skin sloughing / blistering", type: "yesno" },
-                { id: "ra_hypotension", label: "Hypotension", type: "yesno" },
-                { id: "ra_toxic_appear", label: "Toxic / ill-appearing", type: "yesno" },
-                { id: "ra_petechiae", label: "Petechiae / purpura (non-blanching)", type: "yesno" },
-            ]
-        },
-        {
-            title: "Context",
-            questions: [
-                { id: "ra_new_med", label: "New medication in last 2 weeks", type: "yesno", sub: [
-                    { id: "ra_med_name", label: "Medication", type: "text", placeholder: "" }
-                ]},
-                { id: "ra_exposure", label: "Exposure (plants, animals, sick contacts)", type: "yesno", sub: [
-                    { id: "ra_exposure_desc", label: "Detail", type: "text", placeholder: "" }
-                ]},
-                { id: "ra_immunocomp", label: "Immunocompromised", type: "yesno" },
-                { id: "ra_hx_eczema", label: "History of eczema / dermatitis", type: "yesno" },
-            ]
-        }
-    ]
-},
-{
-    id: "eye_complaint",
-    name: "Eye Complaint",
-    emoji: "\u{1F441}\uFE0F",
-    sections: [
-        {
-            title: "Eye Symptoms",
-            questions: [
-                { id: "ey_affected", label: "Affected eye", type: "chips", options: ["Right","Left","Both"] },
-                { id: "ey_primary_sx", label: "Primary symptom", type: "chips", options: ["Pain","Redness","Vision loss","Discharge","Foreign body sensation","Floaters/flashes"] },
-                { id: "ey_onset", label: "Onset", type: "chips", options: ["Sudden","Gradual"] },
-                { id: "ey_duration", label: "Duration", type: "text", placeholder: "" },
-                { id: "ey_vision_change", label: "Vision change", type: "yesno", sub: [
-                    { id: "ey_vision_desc", label: "Describe", type: "chips", options: ["Blurry","Complete loss","Partial field loss","Floaters","Flashes","Halos"] },
-                ]},
-            ]
-        },
-        {
-            title: "Red Flags",
-            questions: [
-                { id: "ey_sudden_vision_loss", label: "Acute vision loss", type: "yesno" },
-                { id: "ey_curtain", label: "Curtain/veil over vision (retinal detachment)", type: "yesno" },
-                { id: "ey_severe_pain", label: "Severe pain with nausea (acute glaucoma)", type: "yesno" },
-                { id: "ey_chemical_exposure", label: "Chemical exposure", type: "yesno" },
-                { id: "ey_penetrating_injury", label: "Penetrating injury / globe rupture concern", type: "yesno" },
-                { id: "ey_pain_with_movement", label: "Pain with eye movement", type: "yesno" },
-            ]
-        },
-        {
-            title: "Context",
-            questions: [
-                { id: "ey_trauma", label: "Trauma", type: "yesno" },
-                { id: "ey_contact_lenses", label: "Contact lens wearer", type: "yesno" },
-                { id: "ey_welding", label: "Welding / UV exposure", type: "yesno" },
-                { id: "ey_discharge", label: "Discharge", type: "yesno", sub: [
-                    { id: "ey_discharge_type", label: "Type", type: "chips", options: ["Purulent","Watery","Mucoid"] },
-                ]},
-                { id: "ey_photophobia", label: "Photophobia", type: "yesno" },
-            ]
-        }
-    ]
-}
+    <aside class="note-col" id="note-col">
+        <div class="card">
+            <div class="card-head">
+                <h2>Note</h2>
+                <button type="button" class="btn-primary" id="copy-btn">Copy note</button>
+            </div>
+            <div class="note-output empty" id="note-output">Choose a chief complaint to start. The note builds here as you tap.</div>
+            <div class="note-foot">Review before signing: the note reflects only what was entered here.</div>
+        </div>
+    </aside>
+</div>
+
+<div class="mobile-bar">
+    <button type="button" class="btn-outline" id="jump-btn">View note</button>
+    <button type="button" class="btn-primary" id="copy-btn-m">Copy note</button>
+</div>
+
+<script>
+/* ================================================================
+   DATA
+   Question builders:
+     yn    yes/no. Blank = absent in the note, unless s:1 (then omitted).
+           sub: follow-up questions shown when "Yes".
+           p / n: wording used in the positive / negative list.
+           yes / no: a full sentence used instead of the lists.
+     ch    multi-select chips;  one  single-select chips
+     tx    free text;           sc   0-10 severity
+     ex    exam finding: Normal / Abnormal (+ abnormal chips and text)
+   t: template for the note fragment, "{}" is replaced by the value.
+   h: small hint under the label.  sex: "M"/"F" limits the question.
+   ================================================================ */
+function ext(a, b) { for (var k in b) { if (Object.prototype.hasOwnProperty.call(b, k)) a[k] = b[k]; } return a; }
+function yn(id, label, o) { return ext({ id: id, label: label, type: "yn" }, o || {}); }
+function ch(id, label, options, o) { return ext({ id: id, label: label, type: "chips", options: options }, o || {}); }
+function one(id, label, options, o) { return ext({ id: id, label: label, type: "chips", options: options, single: true }, o || {}); }
+function tx(id, label, ph, o) { return ext({ id: id, label: label, type: "text", ph: ph || "" }, o || {}); }
+function sc(id, label) { return { id: id, label: label || "Severity (0-10)", type: "scale" }; }
+function ex(id, label, normal, abn) { return { id: id, label: label, type: "exam", normal: normal, abn: abn || [] }; }
+
+/* ---- Shared history items (expand for details when "Yes") ---- */
+var HTN = yn("htn", "Hypertension");
+var DM = yn("dm", "Diabetes", { sub: [ch("dm_rx", "Treatment", ["diet-controlled", "on oral agents", "on insulin"])] });
+var LIPID = yn("lipid", "Hyperlipidemia");
+var SMOKE = yn("smoke", "Smoking", { p: "smoking history", sub: [
+    one("smoke_s", "Status", ["current smoker", "ex-smoker"]),
+    tx("smoke_py", "Pack-years", "e.g. 30", { t: "{} pack-years" })
+] });
+var CAD = yn("cad", "Coronary artery disease", { h: "prior MI, stents, CABG", n: "known coronary artery disease", sub: [
+    ch("cad_t", "Details", ["prior MI", "PCI / stents", "CABG"]),
+    tx("cad_x", "Last cath / stress test", "e.g. cath 2023", { t: "{}" })
+] });
+var CHF = yn("chf", "Heart failure", { sub: [
+    tx("chf_ef", "EF / last echo", "e.g. EF 35%", { t: "{}" }),
+    tx("chf_rx", "Diuretic / HF medications", "e.g. furosemide 40 mg", { t: "on {}" }),
+    yn("chf_adh", "Missed medications or excess salt / fluid")
+] });
+var COPD = yn("copd", "COPD", { sub: [
+    tx("copd_y", "Years since diagnosis", "e.g. 10", { t: "diagnosed {} years ago" }),
+    tx("copd_rx", "Inhalers / medications", "e.g. tiotropium, salbutamol", { t: "on {}" }),
+    yn("copd_o2", "Home oxygen"),
+    tx("copd_ex", "Exacerbations in the last year", "e.g. 2, last one 3 months ago", { t: "exacerbations in the last year: {}" }),
+    yn("copd_icu", "Prior ICU admission / intubation / NIV", { p: "prior ICU admission or ventilation", n: "prior ICU admission or ventilation" }),
+    yn("copd_st", "Steroids or antibiotics in the last month", { p: "steroids/antibiotics in the last month" })
+] });
+var ASTHMA = yn("asthma", "Asthma", { sub: [
+    tx("asthma_rx", "Inhalers / medications", "e.g. budesonide-formoterol", { t: "on {}" }),
+    tx("asthma_ed", "ED visits / admissions in the last year", "e.g. 1", { t: "ED visits/admissions in the last year: {}" }),
+    yn("asthma_icu", "Prior ICU admission / intubation", { p: "prior ICU admission or intubation", n: "prior ICU admission or intubation" }),
+    yn("asthma_st", "Oral steroids in the last month")
+] });
+var AFIB = yn("afib", "Atrial fibrillation / known arrhythmia", { sub: [
+    tx("afib_t", "Type", "e.g. paroxysmal AF, SVT", { t: "{}" }),
+    yn("afib_abl", "Prior ablation / cardioversion")
+] });
+var ANTICOAG = yn("anticoag", "Anticoagulant / antiplatelet", { p: "on anticoagulant/antiplatelet", n: "anticoagulant or antiplatelet use", sub: [
+    tx("anticoag_x", "Which", "e.g. apixaban, aspirin", { t: "{}" })
+] });
+var VTE = yn("vte", "Prior DVT / PE", { sub: [yn("vte_ac", "Currently anticoagulated")] });
+var IMMOB = yn("immob", "Recent surgery, immobilization or long travel", { h: "within the last 4 weeks", p: "recent surgery/immobilization/long travel", n: "recent surgery/immobilization/long travel" });
+var CANCER = yn("cancer", "Active malignancy", { sub: [tx("cancer_x", "Type / current treatment", "e.g. lung, on chemotherapy", { t: "{}" })] });
+var ESTROGEN = yn("estrogen", "Estrogen use", { h: "combined pill, HRT", sex: "F" });
+var PREG = yn("preg", "Pregnant / possibly pregnant", { sex: "F", p: "possible pregnancy", n: "possibility of pregnancy", sub: [
+    tx("preg_x", "LMP / gestation", "e.g. LMP 3 weeks ago", { t: "{}" })
+] });
+var IMMUNO = yn("immuno", "Immunocompromised", { p: "immunocompromised", n: "immunocompromise", sub: [
+    ch("immuno_c", "Cause", ["chemotherapy", "long-term steroids", "biologic / immunosuppressant", "HIV", "transplant", "asplenia", "neutropenia"])
+] });
+var CKD = yn("ckd", "Chronic kidney disease", { sub: [yn("ckd_d", "On dialysis")] });
+var STROKE = yn("stroke", "Prior stroke / TIA");
+var ETOH = yn("etoh", "Heavy alcohol use", { sub: [
+    tx("etoh_x", "Amount", "e.g. 6 beers daily", { t: "{}" }),
+    tx("etoh_l", "Last drink", "e.g. 2 days ago", { t: "last drink {}" })
+] });
+var IVDU = yn("ivdu", "IV drug use");
+
+/* ---- Shared exam items ---- */
+var VIT = tx("vitals", "Vitals", "BP, HR, RR, Temp, SpO2", { w: 1 });
+var ECG = tx("ecg", "ECG", "e.g. sinus rhythm, no ischemic changes", { w: 1 });
+var GLU = tx("glu", "Fingerstick glucose", "value");
+var G = ex("g", "General", "alert, comfortable, in no acute distress", ["ill-appearing", "in distress", "diaphoretic", "pale", "drowsy", "confused", "dehydrated"]);
+var CV = ex("cv", "Heart", "regular rate and rhythm, normal heart sounds, no murmurs", ["tachycardic", "bradycardic", "irregular rhythm", "murmur", "pericardial rub", "muffled heart sounds", "elevated JVP"]);
+var LUNG = ex("lung", "Lungs", "clear bilaterally with good air entry, no wheezes or crackles, no respiratory distress", ["wheezes", "crackles", "decreased air entry", "prolonged expiration", "accessory muscle use", "tachypneic", "dull to percussion"]);
+var ABD = ex("abd", "Abdomen", "soft, non-tender, non-distended, no guarding or rebound", ["RUQ tenderness", "epigastric tenderness", "LUQ tenderness", "RLQ tenderness", "LLQ tenderness", "suprapubic tenderness", "diffuse tenderness", "guarding", "rebound", "rigidity", "distension", "Murphy's sign positive", "palpable mass", "pulsatile mass", "hernia"]);
+var CVA = ex("cva", "Flanks", "no costovertebral angle tenderness", ["right CVA tenderness", "left CVA tenderness"]);
+var LEGS = ex("legs", "Legs", "no edema, calves soft and non-tender", ["bilateral pitting edema", "unilateral leg swelling", "calf tenderness"]);
+var NEURO = ex("neuro", "Neuro", "alert and oriented, speech normal, cranial nerves intact, power and sensation normal in all limbs, no cerebellar signs", ["disoriented", "facial droop", "arm weakness", "leg weakness", "pronator drift", "sensory deficit", "dysarthria", "aphasia", "visual field defect", "limb ataxia", "abnormal gait"]);
+var NECK = ex("neck", "Neck", "supple, no meningismus", ["neck stiffness", "Kernig / Brudzinski positive", "cervical lymphadenopathy", "midline tenderness"]);
+var ENT = ex("ent", "ENT", "oropharynx clear, tympanic membranes normal", ["pharyngeal erythema", "tonsillar exudate", "red / bulging tympanic membrane", "sinus tenderness"]);
+
+function EXAM(items) { return { title: "Physical exam", part: "exam", q: [VIT].concat(items) }; }
+
+var BACKGROUND = { title: "Medications and allergies", part: "bg", q: [
+    tx("pmh_o", "Other medical / surgical history", "anything not listed above", { w: 1 }),
+    tx("meds", "Regular medications", "free text", { w: 1 }),
+    yn("allergy", "Drug allergies", { s: 1, sub: [tx("allergy_x", "Allergic to", "e.g. penicillin (rash)")] })
+] };
+
+var ONSET = one("onset", "Onset", ["sudden", "gradual"], { t: "{} onset" });
+var DUR = tx("dur", "Duration", "e.g. 2 hours", { t: "for {}" });
+var COURSE = one("course", "Course", ["constant", "intermittent"]);
+
+var COMPLAINTS = [
+/* ---------------- 1. CHEST PAIN ---------------- */
+{ id: "chest_pain", name: "Chest pain", cc: "chest pain", sections: [
+    { title: "Pain", lead: "Pain:", pos: "Pain is", neg: "Not", q: [
+        ch("loc", "Location", ["substernal", "left-sided", "right-sided", "epigastric", "diffuse"]),
+        ch("qual", "Quality", ["pressure", "tightness", "sharp", "burning", "tearing", "aching"]),
+        sc("sev"),
+        ch("rad", "Radiation", ["left arm", "right arm", "both arms", "jaw", "neck", "back", "no radiation"], { t: "radiating to {}" }),
+        ONSET, DUR, COURSE,
+        yn("exert", "Exertional", { h: "comes on or worsens with effort" }),
+        yn("pleur", "Pleuritic", { h: "worse on deep breath" }),
+        yn("posit", "Positional", { h: "worse lying flat, better leaning forward" }),
+        yn("ntg", "Relieved by rest or nitroglycerin"),
+        yn("same", "Similar to previous angina / MI", { s: 1, yes: "Similar to previous cardiac pain", no: "Unlike any previous cardiac pain" })
+    ] },
+    { title: "Associated symptoms", q: [
+        yn("sob", "Shortness of breath"), yn("diaph", "Diaphoresis"), yn("nv", "Nausea / vomiting"),
+        yn("palp", "Palpitations"), yn("sync", "Syncope / presyncope"),
+        yn("cough", "Cough", { sub: [yn("hemop", "Hemoptysis")] }),
+        yn("fever", "Fever"), yn("legsw", "Leg swelling or calf pain", { h: "DVT" }),
+        yn("trauma", "Recent chest trauma")
+    ] },
+    { title: "Risk factors and history", part: "hx", head: "Risk factors", q: [
+        CAD, HTN, DM, LIPID, SMOKE,
+        yn("fhx", "Family history of premature CAD", { h: "first-degree relative, men <55 / women <65" }),
+        yn("coc", "Cocaine / stimulant use"),
+        VTE, IMMOB, CANCER, ESTROGEN,
+        yn("aorta", "Aortic aneurysm or connective tissue disease", { h: "dissection risk" }),
+        ANTICOAG
+    ] },
+    EXAM([G, CV, LUNG,
+        ex("cw", "Chest wall", "non-tender", ["reproducible tenderness", "bruising", "rash (zoster)"]),
+        ex("pulse", "Pulses", "equal and symmetric in all limbs", ["pulse deficit", "BP difference between arms"]),
+        ABD, LEGS, ECG])
+] },
+
+/* ---------------- 2. ABDOMINAL PAIN ---------------- */
+{ id: "abdominal_pain", name: "Abdominal pain", cc: "abdominal pain", sections: [
+    { title: "Pain", lead: "Pain:", q: [
+        ch("loc", "Location", ["RUQ", "epigastric", "LUQ", "periumbilical", "RLQ", "LLQ", "suprapubic", "right flank", "left flank", "diffuse"]),
+        ch("qual", "Quality", ["crampy", "colicky", "sharp", "dull", "burning"]),
+        sc("sev"), ONSET, DUR, COURSE,
+        ch("rad", "Radiation", ["back", "right shoulder", "groin", "no radiation"], { t: "radiating to {}" }),
+        yn("mig", "Pain has migrated", { yes: "Pain has migrated", sub: [tx("mig_x", "From / to", "e.g. periumbilical to RLQ", { t: "{}" })] }),
+        yn("food", "Worse after eating", { yes: "Worse after eating" }),
+        yn("move", "Worse with movement or coughing", { yes: "Worse with movement or coughing" })
+    ] },
+    { title: "GI symptoms", q: [
+        yn("nausea", "Nausea"),
+        yn("vomit", "Vomiting", { sub: [
+            ch("vomit_c", "Content", ["food", "bilious", "bloody", "coffee-ground"]),
+            tx("vomit_n", "Episodes", "e.g. 3", { t: "{} episodes" })
+        ] }),
+        yn("diar", "Diarrhea", { sub: [yn("diar_b", "Bloody"), tx("diar_n", "Frequency", "e.g. 5 per day", { t: "{}" })] }),
+        yn("constip", "Constipation", { sub: [
+            tx("constip_l", "Last bowel movement", "e.g. 3 days ago", { t: "last bowel movement {}" }),
+            yn("noflatus", "Not passing flatus")
+        ] }),
+        yn("melena", "Melena"), yn("brbpr", "Rectal bleeding"),
+        yn("anorexia", "Loss of appetite"), yn("jaund", "Jaundice / dark urine")
+    ] },
+    { title: "Other symptoms", q: [
+        yn("fever", "Fever / chills"),
+        yn("uri", "Urinary symptoms", { sub: [ch("uri_c", "Which", ["dysuria", "frequency", "urgency", "hematuria"])] }),
+        yn("cpsob", "Chest pain or shortness of breath"),
+        yn("wtloss", "Unintentional weight loss"),
+        yn("testis", "Testicular pain / swelling", { sex: "M" }),
+        yn("vagbl", "Vaginal bleeding", { sex: "F" }),
+        yn("vagdc", "Vaginal discharge", { sex: "F" }),
+        PREG
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        yn("surg", "Prior abdominal surgery", { sub: [tx("surg_x", "Which", "e.g. appendectomy 2015", { t: "{}" })] }),
+        yn("prev", "Similar episodes before", { p: "similar previous episodes", n: "similar previous episodes" }),
+        yn("gall", "Gallstones"),
+        yn("pud", "Peptic ulcer disease or regular NSAID use"),
+        ETOH,
+        yn("stone", "Kidney stones"),
+        yn("ibd", "Inflammatory bowel disease"),
+        yn("vasc", "Atrial fibrillation or vascular disease", { h: "mesenteric ischemia, AAA" }),
+        DM, ANTICOAG
+    ] },
+    EXAM([G, ABD, CVA,
+        ex("hern", "Groins / genitalia", "no hernias, external genitalia normal", ["inguinal hernia", "irreducible hernia", "testicular tenderness", "scrotal swelling"]),
+        ex("pr", "Rectal exam", "normal tone, no masses, brown stool", ["melena", "fresh blood", "mass", "tenderness", "impacted stool"]),
+        CV, LUNG])
+] },
+
+/* ---------------- 3. SHORTNESS OF BREATH ---------------- */
+{ id: "sob", name: "Shortness of breath", cc: "shortness of breath", sections: [
+    { title: "Dyspnea", lead: "Dyspnea:", q: [
+        one("onset", "Onset", ["sudden", "gradual over hours", "gradual over days", "acute on chronic"], { t: "onset {}" }),
+        DUR,
+        yn("rest", "Present at rest", { p: "dyspnea at rest", n: "dyspnea at rest" }),
+        yn("exer", "Worse on exertion", { p: "exertional dyspnea", n: "exertional worsening", sub: [tx("exer_x", "Exercise tolerance", "e.g. 20 m, was 200 m", { t: "exercise tolerance {}" })] }),
+        yn("orth", "Orthopnea"),
+        yn("pnd", "Paroxysmal nocturnal dyspnea")
+    ] },
+    { title: "Associated symptoms", q: [
+        yn("cough", "Cough", { sub: [
+            yn("cough_p", "Productive", { sub: [ch("sputum", "Sputum", ["white", "yellow", "green", "blood-streaked", "pink frothy"], { t: "{} sputum" })] })
+        ] }),
+        yn("hemop", "Hemoptysis"), yn("wheeze", "Wheeze"),
+        yn("cp", "Chest pain", { sub: [one("cp_t", "Type", ["pleuritic", "pressure-like"])] }),
+        yn("fever", "Fever / chills"),
+        yn("legsw", "Leg swelling", { sub: [one("legsw_s", "Side", ["bilateral", "unilateral"])] }),
+        yn("calf", "Calf pain"), yn("palp", "Palpitations"), yn("sync", "Syncope / presyncope"),
+        yn("wtgain", "Recent weight gain"),
+        yn("urti", "Recent URTI or sick contacts")
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        COPD, ASTHMA, SMOKE, CHF, CAD, VTE, IMMOB, CANCER, ESTROGEN, PREG, CKD
+    ] },
+    EXAM([
+        ex("g", "General", "alert, comfortable, speaking full sentences", ["speaking in short phrases", "unable to speak", "tripod position", "cyanosed", "diaphoretic", "drowsy", "agitated"]),
+        LUNG, CV,
+        ex("jvp", "JVP", "not elevated", ["elevated"]),
+        LEGS, ECG])
+] },
+
+/* ---------------- 4. HEADACHE ---------------- */
+{ id: "headache", name: "Headache", cc: "headache", sections: [
+    { title: "Headache", lead: "Headache:", q: [
+        one("onset", "Onset", ["thunderclap (peak within 1 minute)", "sudden", "gradual"], { t: "onset {}" }),
+        ch("loc", "Location", ["frontal", "temporal", "occipital", "unilateral", "bilateral", "diffuse", "periorbital"]),
+        ch("qual", "Quality", ["throbbing", "pressure", "band-like", "stabbing"]),
+        sc("sev"), DUR,
+        yn("worst", "Worst headache of life"),
+        yn("diff", "Different from usual headaches", { s: 1, yes: "Different from usual headaches", no: "Similar to usual headaches" }),
+        yn("exert", "Onset during exertion or intercourse"),
+        yn("postural", "Worse lying down, on waking, or with cough / straining", { p: "worsening when lying down or with straining", n: "postural or strain-related worsening" })
+    ] },
+    { title: "Red flags", q: [
+        yn("fever", "Fever"), yn("neckst", "Neck stiffness"),
+        yn("focal", "Focal neurological symptoms", { sub: [ch("focal_c", "Which", ["weakness", "numbness", "speech disturbance", "facial droop", "unsteadiness"])] }),
+        yn("vision", "Visual disturbance", { sub: [ch("vision_c", "Which", ["blurred vision", "diplopia", "visual loss", "transient obscurations"])] }),
+        yn("seiz", "Seizure"), yn("conf", "Confusion or reduced consciousness"), yn("sync", "Syncope"),
+        yn("trauma", "Head trauma", { sub: [tx("trauma_x", "When", "e.g. fell 2 days ago", { t: "{}" })] }),
+        yn("gca", "Jaw claudication or scalp tenderness", { h: "giant cell arteritis, age >50" }),
+        yn("eye", "Painful red eye or halos", { h: "acute angle-closure glaucoma" }),
+        yn("pp", "Pregnant or postpartum", { sex: "F", p: "pregnancy/postpartum state", n: "pregnancy or recent delivery" })
+    ] },
+    { title: "Associated symptoms", q: [
+        yn("nv", "Nausea / vomiting"), yn("photo", "Photophobia"), yn("phono", "Phonophobia"), yn("aura", "Aura")
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        yn("mig", "Migraine or other headache disorder", { n: "known headache disorder" }),
+        ANTICOAG, IMMUNO, CANCER, HTN,
+        yn("moh", "Analgesic use on most days", { p: "frequent analgesic use", n: "frequent analgesic use" }),
+        yn("co", "Possible carbon monoxide exposure", { h: "others at home unwell, faulty heating" })
+    ] },
+    EXAM([G, NEURO, NECK,
+        ex("eyes", "Eyes / fundi", "pupils equal and reactive, no papilledema", ["papilledema", "unequal pupils", "red eye", "fixed mid-dilated pupil"]),
+        ex("temp", "Temporal arteries", "non-tender with normal pulsation", ["tender", "thickened", "pulseless"])])
+] },
+
+/* ---------------- 5. BACK PAIN ---------------- */
+{ id: "back_pain", name: "Back pain", cc: "back pain", sections: [
+    { title: "Pain", lead: "Pain:", q: [
+        ch("loc", "Location", ["cervical", "thoracic", "lumbar", "sacral", "right flank", "left flank"]),
+        ch("qual", "Quality", ["aching", "sharp", "spasm", "shooting", "tearing"]),
+        sc("sev"),
+        one("onset", "Onset", ["sudden", "gradual", "after lifting or twisting", "after trauma"], { t: "onset {}" }),
+        DUR,
+        yn("leg", "Radiates to the leg", { yes: "Radiates to the leg", no: "No radiation to the legs", sub: [
+            one("leg_s", "Side", ["left", "right", "bilateral"]), yn("leg_k", "Below the knee")
+        ] }),
+        yn("night", "Pain at night or at rest", { yes: "Present at night and at rest", no: "No night or rest pain" })
+    ] },
+    { title: "Red flags", q: [
+        yn("saddle", "Saddle numbness"),
+        yn("uret", "Urinary retention or incontinence"),
+        yn("bowel", "Bowel incontinence"),
+        yn("weak", "Leg weakness", { sub: [tx("weak_x", "Describe", "e.g. right foot drop", { t: "{}" })] }),
+        yn("numb", "Leg numbness / tingling"),
+        yn("fever", "Fever"), yn("wtloss", "Unintentional weight loss"),
+        yn("trauma", "Significant trauma"),
+        yn("abdp", "Abdominal pain"),
+        yn("urisx", "Dysuria or hematuria")
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        CANCER, IVDU, IMMUNO,
+        yn("ster", "Long-term steroid use or osteoporosis"),
+        yn("proc", "Recent spinal procedure or injection"),
+        ANTICOAG,
+        yn("aaa", "Known aortic aneurysm"),
+        yn("prevb", "Previous back problems or spinal surgery")
+    ] },
+    EXAM([G,
+        ex("spine", "Spine", "no midline tenderness, deformity or step-off", ["midline tenderness", "paraspinal tenderness", "muscle spasm", "step-off"]),
+        ex("slr", "Straight leg raise", "negative bilaterally", ["positive right", "positive left", "crossed positive"]),
+        ex("lln", "Lower limb neuro", "normal power, sensation and reflexes in both legs", ["weak hip flexion", "weak knee extension", "weak ankle dorsiflexion", "weak great toe extension", "weak plantarflexion", "reduced sensation", "absent ankle reflex", "absent knee reflex", "upgoing plantar"]),
+        ex("peri", "Perianal sensation / anal tone", "perianal sensation intact, normal anal tone", ["reduced perianal sensation", "reduced anal tone"]),
+        ex("gait", "Gait", "walks unaided with normal gait", ["antalgic gait", "unable to walk", "foot drop"]),
+        ABD, CVA])
+] },
+
+/* ---------------- 6. FEVER ---------------- */
+{ id: "fever", name: "Fever", cc: "fever", sections: [
+    { title: "Fever", lead: "Fever:", q: [
+        tx("tmax", "Highest temperature", "e.g. 39.2 at home", { t: "up to {}" }),
+        DUR,
+        yn("rigors", "Chills / rigors"), yn("sweats", "Night sweats")
+    ] },
+    { title: "Looking for a source", q: [
+        yn("cough", "Cough", { sub: [yn("cough_p", "Productive")] }),
+        yn("sob", "Shortness of breath"),
+        yn("urti", "Sore throat, ear pain or runny nose", { p: "upper respiratory symptoms", n: "upper respiratory symptoms" }),
+        yn("uri", "Urinary symptoms", { sub: [ch("uri_c", "Which", ["dysuria", "frequency", "urgency", "hematuria"])] }),
+        yn("flank", "Flank pain"),
+        yn("abdp", "Abdominal pain", { sub: [tx("abdp_x", "Where", "e.g. RUQ", { t: "{}" })] }),
+        yn("vomit", "Vomiting"), yn("diar", "Diarrhea"),
+        yn("ha", "Headache"), yn("neckst", "Neck stiffness"), yn("photo", "Photophobia"), yn("conf", "Confusion"),
+        yn("rash", "Rash", { sub: [tx("rash_x", "Describe", "e.g. petechial, legs", { t: "{}" })] }),
+        yn("ssti", "Skin redness, swelling or wound", { p: "skin/soft tissue complaint", n: "skin or wound complaint", sub: [tx("ssti_x", "Where", "e.g. left shin", { t: "{}" })] }),
+        yn("joint", "Joint pain or swelling", { sub: [tx("joint_x", "Which joint", "e.g. right knee", { t: "{}" })] })
+    ] },
+    { title: "Risk factors", part: "hx", head: "Risk factors", q: [
+        IMMUNO,
+        yn("travel", "Recent travel", { sub: [tx("travel_x", "Where / when", "e.g. Kenya, returned 1 week ago", { t: "{}" })] }),
+        yn("sick", "Sick contacts"),
+        yn("hosp", "Surgery, procedure or hospital stay in the last 3 months", { p: "recent surgery/hospitalization", n: "recent surgery or hospitalization" }),
+        yn("device", "Indwelling device", { sub: [ch("device_c", "Which", ["urinary catheter", "central line", "prosthetic joint", "prosthetic valve", "pacemaker"])] }),
+        IVDU,
+        yn("abx", "Antibiotics in the last month", { p: "recent antibiotics", n: "recent antibiotic use", sub: [tx("abx_x", "Which", "e.g. amoxicillin, finished 3 days ago", { t: "{}" })] }),
+        yn("tick", "Animal or tick exposure"),
+        DM,
+        yn("pp", "Pregnant or postpartum", { sex: "F", p: "pregnancy/postpartum state", n: "pregnancy or recent delivery" })
+    ] },
+    EXAM([G, ENT,
+        ex("neck", "Neck", "supple, no meningismus, no lymphadenopathy", ["neck stiffness", "Kernig / Brudzinski positive", "cervical lymphadenopathy"]),
+        LUNG,
+        ex("cv", "Heart", "regular rate and rhythm, no murmurs", ["tachycardic", "new murmur", "irregular rhythm"]),
+        ABD, CVA,
+        ex("skin", "Skin", "warm and well perfused, no rash, cellulitis or wounds", ["petechiae / purpura", "maculopapular rash", "cellulitis", "abscess", "infected wound", "mottled", "cool peripheries"]),
+        ex("jt", "Joints", "no swollen, warm or tender joints", ["swollen joint", "warm joint", "painful range of motion"])])
+] },
+
+/* ---------------- 7. COUGH ---------------- */
+{ id: "cough", name: "Cough", cc: "cough", sections: [
+    { title: "Cough", lead: "Cough:", q: [
+        DUR,
+        yn("prod", "Productive", { yes: "Productive", no: "Non-productive", sub: [ch("sputum", "Sputum", ["white", "yellow", "green", "blood-streaked", "rust-colored"], { t: "{} sputum" })] }),
+        yn("hemop", "Hemoptysis", { yes: "Hemoptysis present", no: "No hemoptysis", sub: [tx("hemop_x", "Amount", "e.g. streaks, a teaspoon", { t: "{}" })] }),
+        yn("noct", "Worse at night", { yes: "Worse at night" })
+    ] },
+    { title: "Associated symptoms", q: [
+        yn("fever", "Fever / chills"), yn("sob", "Shortness of breath"), yn("wheeze", "Wheeze"),
+        yn("pleur", "Pleuritic chest pain"), yn("throat", "Sore throat"),
+        yn("rhin", "Runny nose or postnasal drip"), yn("myalgia", "Myalgia"),
+        yn("reflux", "Heartburn / reflux"),
+        yn("wtloss", "Unintentional weight loss"), yn("sweats", "Night sweats"),
+        yn("orth", "Orthopnea or leg swelling")
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        SMOKE, ASTHMA, COPD, CHF,
+        yn("sick", "Sick contacts"),
+        yn("tb", "TB risk", { h: "exposure, endemic country, homelessness, incarceration", p: "TB risk factors", n: "TB risk factors" }),
+        IMMUNO,
+        yn("acei", "ACE inhibitor use")
+    ] },
+    EXAM([G, ENT, LUNG, CV, LEGS])
+] },
+
+/* ---------------- 8. DIZZINESS ---------------- */
+{ id: "dizziness", name: "Dizziness / vertigo", cc: "dizziness", sections: [
+    { title: "Dizziness", lead: "Dizziness:", q: [
+        one("type", "Type", ["vertigo (spinning)", "lightheadedness", "unsteadiness"]),
+        one("timing", "Timing", ["brief episodes (seconds)", "episodes of minutes to hours", "continuous for hours to days"]),
+        ONSET, DUR,
+        yn("headmv", "Triggered by head movement or position change", { yes: "Triggered by head movement or position change" }),
+        yn("stand", "Triggered by standing up", { yes: "Triggered by standing up" }),
+        yn("first", "First episode", { s: 1, yes: "First episode", no: "Has had similar episodes before" })
+    ] },
+    { title: "Central red flags", q: [
+        yn("weak", "Limb weakness or numbness"), yn("dipl", "Diplopia"),
+        yn("dysar", "Slurred speech"), yn("dysph", "Difficulty swallowing"),
+        yn("ha", "Severe headache or neck pain", { h: "hemorrhage, dissection" }),
+        yn("walk", "Unable to stand or walk unaided", { p: "inability to walk unaided", n: "inability to walk" })
+    ] },
+    { title: "Ear and other symptoms", q: [
+        yn("hear", "Hearing loss"), yn("tinn", "Tinnitus"), yn("earp", "Ear pain or fullness"),
+        yn("nv", "Nausea / vomiting"), yn("cp", "Chest pain"), yn("palp", "Palpitations"),
+        yn("sync", "Syncope"), yn("sob", "Shortness of breath"),
+        yn("bleed", "Melena or other blood loss"),
+        yn("intake", "Poor oral intake, vomiting or diarrhea", { p: "poor intake or fluid losses", n: "reduced intake or fluid losses" })
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        yn("prevv", "Previous vertigo / BPPV"),
+        yn("urti", "Recent viral illness"),
+        yn("trauma", "Recent head or neck trauma"),
+        HTN, DM, AFIB, STROKE, SMOKE, ANTICOAG,
+        yn("newmed", "New or changed medication", { h: "antihypertensives, sedatives", sub: [tx("newmed_x", "Which", "e.g. started amlodipine", { t: "{}" })] })
+    ] },
+    EXAM([G, NEURO,
+        ex("gait", "Gait", "walks unaided, steady, negative Romberg", ["ataxic gait", "unable to walk unaided", "veers to one side", "positive Romberg"]),
+        one("nyst", "Nystagmus", ["none", "horizontal, unidirectional", "direction-changing", "vertical", "torsional"]),
+        one("hit", "Head impulse test", ["corrective saccade (peripheral pattern)", "normal, no saccade (central pattern)"]),
+        one("skew", "Test of skew", ["no skew deviation", "skew deviation present"]),
+        one("dix", "Dix-Hallpike", ["negative", "positive right", "positive left"]),
+        one("ortho", "Orthostatic vitals", ["negative", "positive"]),
+        ex("ears", "Ears", "tympanic membranes normal, hearing grossly intact", ["red / bulging tympanic membrane", "vesicles in the ear canal", "reduced hearing"]),
+        CV, ECG])
+] },
+
+/* ---------------- 9. EXTREMITY PAIN / INJURY ---------------- */
+{ id: "extremity", name: "Extremity pain / injury", cc: "extremity pain", sections: [
+    { title: "Injury / pain", lead: "Complaint:", q: [
+        tx("loc", "Location", "e.g. right ankle", { t: "{}" }),
+        one("mech", "Mechanism", ["fall", "twisting injury", "direct blow", "crush injury", "sports injury", "road traffic collision", "overuse", "no trauma"], { t: "mechanism: {}" }),
+        tx("when", "When", "e.g. 3 hours ago", { t: "{}" }),
+        sc("sev"),
+        yn("wb", "Able to bear weight / use the limb", { s: 1, yes: "Able to bear weight / use the limb", no: "Unable to bear weight / use the limb" })
+    ] },
+    { title: "Symptoms", q: [
+        yn("swell", "Swelling"), yn("deform", "Deformity"),
+        yn("numb", "Numbness / tingling"), yn("weak", "Weakness"),
+        yn("wound", "Open wound"),
+        yn("comp", "Severe, escalating pain with tense swelling", { h: "compartment syndrome", p: "severe escalating pain with tense swelling", n: "escalating pain or tense swelling" }),
+        yn("red", "Redness or warmth"), yn("fever", "Fever"),
+        yn("calf", "Calf pain or whole-leg swelling", { h: "DVT" }),
+        yn("joint", "Joint swelling without injury", { n: "atraumatic joint swelling" })
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        one("hand", "Dominant hand", ["right-hand dominant", "left-hand dominant"]),
+        yn("previnj", "Previous injury or surgery to this area", { sub: [tx("previnj_x", "Details", "", { t: "{}" })] }),
+        ANTICOAG, DM,
+        yn("osteo", "Osteoporosis"), yn("gout", "Gout"),
+        VTE, IMMOB, IVDU
+    ] },
+    EXAM([
+        ex("insp", "Inspection", "no swelling, deformity, bruising or wounds", ["swelling", "deformity", "bruising", "open wound", "erythema"]),
+        ex("palp", "Palpation", "no bony tenderness", ["bony tenderness", "joint line tenderness", "soft tissue tenderness", "warmth", "effusion", "crepitus"]),
+        ex("rom", "Range of motion", "full and pain-free", ["reduced by pain", "unable to move", "joint instability"]),
+        ex("nv", "Neurovascular", "distal pulses, capillary refill, sensation and movement intact", ["absent pulse", "delayed capillary refill", "reduced sensation", "reduced movement"]),
+        ex("adj", "Joint above and below", "normal", ["tender", "reduced range of motion"]),
+        ex("compt", "Compartments", "soft", ["tense", "pain on passive stretch"]),
+        one("ottawa", "Ottawa ankle / knee rules", ["negative", "positive"]),
+        ex("calves", "Calf", "soft, non-tender, no swelling", ["calf tenderness", "calf swelling", "pitting edema"])])
+] },
+
+/* ---------------- 10. LACERATION ---------------- */
+{ id: "laceration", name: "Laceration / wound", cc: "a laceration", sections: [
+    { title: "Wound", lead: "Wound:", q: [
+        tx("loc", "Location", "e.g. left forearm", { t: "{}" }),
+        tx("len", "Length", "e.g. 4 cm", { t: "{} long" }),
+        ch("mech", "Mechanism", ["knife / sharp object", "glass", "blunt injury / fall", "crush injury", "bite", "machinery"], { t: "caused by {}" }),
+        tx("when", "Time since injury", "e.g. 2 hours", { t: "{} ago" })
+    ] },
+    { title: "Symptoms and concerns", q: [
+        yn("numb", "Numbness beyond the wound"),
+        yn("weak", "Weakness or reduced movement"),
+        yn("bleed", "Heavy or pulsatile bleeding"),
+        yn("dirty", "Contaminated wound", { p: "wound contamination", n: "contamination" }),
+        yn("fb", "Possible foreign body"),
+        yn("bite", "Bite wound", { sub: [one("bite_c", "From", ["dog", "cat", "human", "other animal"])] }),
+        yn("other", "Other injuries or head injury")
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        one("tet", "Last tetanus vaccine", ["within 5 years", "5 to 10 years ago", "over 10 years ago or unknown"], { t: "last tetanus vaccine {}" }),
+        one("hand", "Dominant hand", ["right-hand dominant", "left-hand dominant"]),
+        DM, IMMUNO, ANTICOAG,
+        yn("pvd", "Peripheral vascular disease")
+    ] },
+    EXAM([
+        one("depth", "Depth", ["superficial", "into subcutaneous fat", "down to fascia / muscle", "down to bone or joint"]),
+        ex("wnd", "Wound", "clean, edges easily approximated, base fully visualized, no foreign body", ["gaping", "irregular edges", "contaminated", "devitalized tissue", "foreign body seen", "tendon visible", "bone visible", "joint capsule breached"]),
+        ex("nv", "Neurovascular", "distal sensation, capillary refill and pulses intact", ["reduced sensation", "delayed capillary refill", "absent pulse"]),
+        ex("tend", "Tendon function", "full strength against resistance in all tendons crossing the wound", ["weak flexion", "weak extension", "pain against resistance"]),
+        ex("hemo", "Hemostasis", "bleeding controlled", ["ongoing bleeding", "arterial bleeding"])])
+] },
+
+/* ---------------- 11. NAUSEA / VOMITING ---------------- */
+{ id: "vomiting", name: "Nausea / vomiting", cc: "nausea and vomiting", sections: [
+    { title: "Vomiting", lead: "Vomiting:", q: [
+        DUR,
+        tx("n", "Number of episodes", "e.g. 6 today", { t: "{} episodes" }),
+        ch("cont", "Content", ["food", "bilious", "bloody", "coffee-ground", "feculent"]),
+        yn("po", "Keeping fluids down", { s: 1, yes: "Tolerating oral fluids", no: "Unable to keep fluids down" })
+    ] },
+    { title: "Associated symptoms", q: [
+        yn("abdp", "Abdominal pain", { sub: [ch("abdp_c", "Where", ["epigastric", "RUQ", "RLQ", "LLQ", "suprapubic", "diffuse"])] }),
+        yn("diar", "Diarrhea", { sub: [yn("diar_b", "Bloody")] }),
+        yn("fever", "Fever"),
+        yn("obstr", "Constipation or not passing flatus", { h: "obstruction" }),
+        yn("dist", "Abdominal distension"),
+        yn("melena", "Melena"),
+        yn("ha", "Headache"), yn("vert", "Vertigo"), yn("cp", "Chest pain"),
+        yn("urine", "Reduced urine output"),
+        yn("poly", "Excessive thirst and urination", { h: "DKA" })
+    ] },
+    { title: "Context and history", part: "hx", head: "History", q: [
+        yn("food", "Suspect food or sick contacts"),
+        PREG,
+        yn("newmed", "New medication or chemotherapy", { sub: [tx("newmed_x", "Which", "", { t: "{}" })] }),
+        yn("thc", "Regular cannabis use"),
+        ETOH,
+        yn("hi", "Recent head injury"),
+        DM,
+        yn("surg", "Prior abdominal surgery", { sub: [tx("surg_x", "Which", "", { t: "{}" })] }),
+        yn("travel", "Recent travel")
+    ] },
+    EXAM([G,
+        ex("hyd", "Hydration", "moist mucous membranes, normal skin turgor, capillary refill under 2 seconds", ["dry mucous membranes", "reduced skin turgor", "delayed capillary refill", "sunken eyes"]),
+        ABD, CV, NEURO, GLU])
+] },
+
+/* ---------------- 12. ALLERGIC REACTION ---------------- */
+{ id: "allergy", name: "Allergic reaction", cc: "an allergic reaction", sections: [
+    { title: "Reaction", lead: "Reaction:", q: [
+        tx("trig", "Suspected trigger", "e.g. peanuts, amoxicillin, wasp sting", { t: "suspected trigger {}" }),
+        tx("when", "Time since exposure", "e.g. 30 minutes", { t: "exposure {} ago" }),
+        ch("rx", "Treatment before arrival", ["epinephrine", "antihistamine", "steroid", "none"], { t: "pre-arrival treatment: {}" }),
+        yn("prog", "Symptoms still progressing", { s: 1, yes: "Symptoms still progressing", no: "Symptoms stable or improving" })
+    ] },
+    { title: "Symptoms", q: [
+        yn("skin", "Skin symptoms", { sub: [ch("skin_c", "Which", ["urticaria", "flushing", "itching", "lip / face swelling"])] }),
+        yn("tongue", "Tongue or throat swelling"),
+        yn("voice", "Voice change or difficulty swallowing"),
+        yn("sob", "Shortness of breath or wheeze"),
+        yn("gi", "Vomiting, abdominal cramps or diarrhea", { p: "GI symptoms", n: "GI symptoms" }),
+        yn("dizzy", "Dizziness or collapse")
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        yn("prevana", "Previous anaphylaxis"),
+        tx("known", "Known allergies", "e.g. shellfish", { t: "known allergies: {}", w: 1 }),
+        yn("epi", "Carries an epinephrine auto-injector", { s: 1, yes: "Carries an epinephrine auto-injector", no: "Does not carry an epinephrine auto-injector" }),
+        ASTHMA,
+        yn("acei", "ACE inhibitor use", { h: "angioedema" }),
+        yn("bb", "Beta-blocker use")
+    ] },
+    EXAM([G,
+        ex("airway", "Airway", "patent, no stridor, no tongue or uvula swelling, normal voice", ["stridor", "tongue swelling", "uvula swelling", "hoarse voice", "drooling"]),
+        LUNG,
+        ex("skinx", "Skin", "no urticaria or angioedema", ["generalized urticaria", "localized urticaria", "facial angioedema", "lip swelling", "flushing"]),
+        ex("circ", "Circulation", "warm and well perfused, normal capillary refill", ["cool peripheries", "delayed capillary refill", "weak pulse"])])
+] },
+
+/* ---------------- 13. SYNCOPE ---------------- */
+{ id: "syncope", name: "Syncope", cc: "syncope", sections: [
+    { title: "The event", lead: "Event:", q: [
+        yn("loc", "Complete loss of consciousness", { s: 1, yes: "Complete loss of consciousness", no: "No complete loss of consciousness" }),
+        tx("dur", "Duration unconscious", "e.g. under 1 minute", { t: "lasting {}" }),
+        one("pos", "Position at onset", ["standing", "sitting", "lying down"], { t: "occurred while {}" }),
+        ch("trig", "Trigger", ["prolonged standing", "pain or emotional stress", "urination / defecation / coughing", "standing up quickly", "heat or dehydration", "no trigger identified"], { t: "trigger: {}" }),
+        yn("prod", "Warning symptoms beforehand", { s: 1, yes: "Preceded by warning symptoms", no: "No warning symptoms", sub: [ch("prod_c", "Which", ["lightheadedness", "nausea", "sweating", "feeling warm", "vision dimming"])] }),
+        yn("wit", "Witnessed", { s: 1, yes: "Witnessed", no: "Unwitnessed", sub: [tx("wit_x", "Witness account", "e.g. pale, limp, 30 seconds", { t: "{}", w: 1 })] }),
+        yn("recov", "Rapid, complete recovery", { s: 1, yes: "Rapid and complete recovery", no: "Recovery was slow or incomplete" })
+    ] },
+    { title: "Concerning features", q: [
+        yn("exert", "Occurred during exertion", { p: "onset during exertion", n: "exertional onset" }),
+        yn("cp", "Chest pain"), yn("palp", "Palpitations beforehand"), yn("sob", "Shortness of breath"),
+        yn("ha", "Headache"),
+        yn("jerk", "Limb jerking", { sub: [tx("jerk_x", "Describe", "e.g. brief, after falling", { t: "{}" })] }),
+        yn("tongue", "Tongue biting"), yn("incont", "Incontinence"),
+        yn("postconf", "Prolonged confusion afterwards"),
+        yn("focal", "Focal neurological symptoms"),
+        yn("inj", "Injury from the fall", { sub: [tx("inj_x", "What", "e.g. forehead laceration", { t: "{}" })] }),
+        yn("bleed", "Melena or other blood loss")
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        CAD, CHF, AFIB,
+        yn("pm", "Pacemaker / ICD"),
+        yn("fhx", "Family history of sudden death", { h: "under 50 years" }),
+        yn("prevs", "Previous syncope"),
+        yn("qtmeds", "Antihypertensive, diuretic or QT-prolonging drugs", { p: "on antihypertensive/diuretic/QT-prolonging drugs", n: "antihypertensive/diuretic/QT-prolonging drugs", sub: [tx("qtmeds_x", "Which", "", { t: "{}" })] }),
+        yn("intake", "Poor oral intake or fluid losses"),
+        DM, ANTICOAG, PREG
+    ] },
+    EXAM([G, CV, LUNG, NEURO,
+        one("ortho", "Orthostatic vitals", ["negative", "positive"]),
+        ex("injx", "Injuries", "no head or other injuries, no tongue bite", ["scalp hematoma", "facial injury", "tongue bite", "limb injury"]),
+        ABD, ECG])
+] },
+
+/* ---------------- 14. SORE THROAT ---------------- */
+{ id: "sore_throat", name: "Sore throat", cc: "a sore throat", sections: [
+    { title: "Throat", lead: "Sore throat:", q: [
+        DUR, sc("sev"),
+        one("side", "Side", ["bilateral", "worse on the right", "worse on the left"])
+    ] },
+    { title: "Red flags", q: [
+        yn("drool", "Unable to swallow fluids or saliva", { p: "inability to swallow fluids or saliva", n: "inability to swallow fluids or saliva" }),
+        yn("voice", "Muffled voice"),
+        yn("tris", "Difficulty opening the mouth"),
+        yn("necksw", "Neck swelling or stiffness"),
+        yn("sob", "Difficulty breathing or noisy breathing")
+    ] },
+    { title: "Associated symptoms", q: [
+        yn("odyn", "Painful swallowing"),
+        yn("fever", "Fever"), yn("cough", "Cough"), yn("rhin", "Runny nose"),
+        yn("hoarse", "Hoarseness"), yn("ear", "Ear pain"), yn("rash", "Rash"),
+        yn("fatigue", "Marked fatigue", { h: "mononucleosis" })
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        yn("sick", "Sick contacts or strep exposure"),
+        yn("recur", "Recurrent tonsillitis"),
+        IMMUNO, DM, SMOKE,
+        yn("abx", "Antibiotics already started", { p: "antibiotics already started", n: "antibiotics started", sub: [tx("abx_x", "Which", "", { t: "{}" })] })
+    ] },
+    EXAM([G,
+        ex("oro", "Oropharynx", "no erythema or exudate, tonsils not enlarged, uvula midline", ["erythema", "tonsillar exudate", "tonsillar enlargement", "unilateral peritonsillar swelling", "uvular deviation", "palatal petechiae", "trismus"]),
+        ex("nodes", "Neck", "no cervical lymphadenopathy, no swelling, full range of motion", ["tender anterior cervical nodes", "posterior cervical nodes", "neck swelling", "reduced neck movement"]),
+        ex("airway", "Airway", "no stridor, no drooling, normal voice", ["stridor", "drooling", "muffled voice"]),
+        ex("ears", "Ears", "tympanic membranes normal", ["red / bulging tympanic membrane"]),
+        LUNG])
+] },
+
+/* ---------------- 15. URINARY ---------------- */
+{ id: "urinary", name: "Urinary symptoms", cc: "urinary symptoms", sections: [
+    { title: "Urinary symptoms", lead: "Duration:", q: [
+        tx("dur", "Duration", "e.g. 2 days", { t: "{}" }),
+        yn("dysuria", "Dysuria"), yn("freq", "Frequency"), yn("urg", "Urgency"),
+        yn("hemat", "Hematuria", { sub: [yn("clots", "Passing clots")] }),
+        yn("supra", "Suprapubic pain"),
+        yn("ret", "Difficulty passing urine / retention", { p: "difficulty voiding", n: "difficulty voiding", sub: [tx("ret_x", "Last passed urine", "e.g. 10 hours ago", { t: "last voided {}" })] }),
+        yn("incont", "New incontinence")
+    ] },
+    { title: "Associated symptoms", q: [
+        yn("fever", "Fever / chills"),
+        yn("flank", "Flank pain", { sub: [one("flank_s", "Side", ["right", "left", "bilateral"]), yn("colic", "Colicky, radiating to the groin")] }),
+        yn("nv", "Nausea / vomiting"),
+        yn("cauda", "Leg weakness or saddle numbness"),
+        yn("vag", "Vaginal discharge or irritation", { sex: "F" }),
+        yn("ureth", "Urethral discharge", { sex: "M" }),
+        yn("testis", "Testicular pain or swelling", { sex: "M" }),
+        yn("perin", "Perineal or rectal pain", { sex: "M", h: "prostatitis" })
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        yn("ruti", "Recurrent UTIs", { sub: [tx("ruti_x", "Last episode / antibiotic", "", { t: "{}" })] }),
+        yn("stone", "Kidney stones"),
+        PREG,
+        yn("cath", "Urinary catheter or recent urological procedure"),
+        yn("bph", "Prostate enlargement", { sex: "M" }),
+        yn("sti", "New sexual partner or STI risk"),
+        DM, IMMUNO, CKD,
+        yn("abx", "Antibiotics in the last month", { p: "recent antibiotics", n: "recent antibiotic use" })
+    ] },
+    EXAM([G,
+        ex("abd", "Abdomen", "soft, non-tender, bladder not palpable", ["suprapubic tenderness", "palpable bladder", "flank tenderness", "guarding"]),
+        CVA,
+        ex("gu", "Genital exam", "normal, no discharge", ["urethral discharge", "testicular tenderness", "scrotal swelling", "vaginal discharge", "tender prostate"])])
+] },
+
+/* ---------------- 16. PALPITATIONS ---------------- */
+{ id: "palpitations", name: "Palpitations", cc: "palpitations", sections: [
+    { title: "Palpitations", lead: "Palpitations:", q: [
+        ch("type", "Sensation", ["rapid", "irregular", "skipped beats", "pounding", "fluttering"]),
+        one("onset", "Onset", ["sudden", "gradual"], { t: "{} onset" }),
+        one("offset", "Offset", ["sudden", "gradual", "still ongoing"], { t: "{} offset" }),
+        tx("dur", "Duration / frequency", "e.g. 20 minutes, 3 times this week", { t: "{}" }),
+        yn("rest", "Occur at rest", { yes: "Occur at rest" }),
+        yn("exert", "Brought on by exertion", { yes: "Brought on by exertion", no: "Not exertional" })
+    ] },
+    { title: "Associated symptoms", q: [
+        yn("cp", "Chest pain"), yn("sob", "Shortness of breath"),
+        yn("sync", "Syncope / presyncope"), yn("dizzy", "Dizziness"), yn("diaph", "Diaphoresis")
+    ] },
+    { title: "Triggers and history", part: "hx", head: "History", q: [
+        yn("caff", "Caffeine or energy drinks", { p: "caffeine/energy drink intake", n: "excess caffeine" }),
+        yn("alc", "Alcohol in the last 24 hours", { p: "alcohol in the last 24 hours", n: "recent alcohol" }),
+        yn("stim", "Stimulants or decongestants", { h: "cocaine, amphetamines, pseudoephedrine", p: "stimulant/decongestant use", n: "stimulant or decongestant use" }),
+        AFIB, CAD, CHF,
+        yn("thyroid", "Thyroid disease"),
+        yn("fhx", "Family history of sudden death", { h: "under 50 years" }),
+        yn("bleed", "Bleeding or known anemia"),
+        yn("newmed", "New medication", { sub: [tx("newmed_x", "Which", "", { t: "{}" })] }),
+        ANTICOAG, PREG
+    ] },
+    EXAM([G, CV, LUNG,
+        ex("thy", "Thyroid", "no goiter, no tremor", ["goiter", "tremor", "exophthalmos"]),
+        LEGS, ECG])
+] },
+
+/* ---------------- 17. SEIZURE ---------------- */
+{ id: "seizure", name: "Seizure", cc: "a seizure", sections: [
+    { title: "The seizure", lead: "Seizure:", pos: "Positive for", neg: "No", q: [
+        one("type", "Type", ["generalized tonic-clonic", "focal with impaired awareness", "focal with preserved awareness", "staring / absence", "unclear"]),
+        tx("dur", "Duration", "e.g. 2 minutes", { t: "lasting {}" }),
+        tx("n", "Number of seizures", "e.g. 1", { t: "{} in total" }),
+        yn("wit", "Witnessed", { s: 1, yes: "Witnessed", no: "Unwitnessed" }),
+        yn("base", "Back to baseline now", { s: 1, yes: "Now back to baseline", no: "Not yet back to baseline" }),
+        yn("aura", "Aura"), yn("tongue", "Tongue biting"), yn("incont", "Incontinence"),
+        yn("postict", "Post-ictal confusion", { sub: [tx("postict_x", "How long", "e.g. 20 minutes", { t: "{}" })] }),
+        yn("inj", "Injury during the seizure", { sub: [tx("inj_x", "What", "", { t: "{}" })] })
+    ] },
+    { title: "Possible triggers", pos: "Positive for", neg: "No", q: [
+        yn("missed", "Missed anti-seizure medication"),
+        yn("sleep", "Sleep deprivation"),
+        ETOH,
+        yn("drugs", "Recreational drug use"),
+        yn("fever", "Fever or infective symptoms"),
+        yn("ha", "Headache beforehand"),
+        yn("hi", "Recent head injury"),
+        yn("newmed", "New medication", { h: "tramadol, bupropion, antibiotics", sub: [tx("newmed_x", "Which", "", { t: "{}" })] }),
+        yn("pp", "Pregnant or postpartum", { sex: "F", h: "eclampsia", p: "pregnancy/postpartum state", n: "pregnancy or recent delivery" })
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        yn("epi", "Known epilepsy", { yes: "Known epilepsy", no: "No known epilepsy", sub: [
+            tx("epi_rx", "Anti-seizure medication", "e.g. levetiracetam 500 mg bd", { t: "on {}" }),
+            tx("epi_l", "Last seizure / usual frequency", "e.g. 6 months ago", { t: "last seizure {}" }),
+            yn("epi_typ", "Typical of usual seizures")
+        ] }),
+        STROKE,
+        yn("brain", "Brain tumor or neurosurgery"),
+        CANCER, IMMUNO, DM, ANTICOAG
+    ] },
+    EXAM([
+        ex("g", "General", "alert, oriented, GCS 15", ["drowsy", "confused", "agitated", "still seizing"]),
+        GLU,
+        ex("neuro", "Neuro", "cranial nerves intact, normal power and sensation in all limbs, no focal deficit", ["focal weakness (Todd's paresis)", "facial droop", "speech disturbance", "gaze deviation", "abnormal gait"]),
+        ex("mouth", "Mouth", "no tongue or oral injury", ["lateral tongue bite", "oral injury"]),
+        ex("head", "Head and injuries", "no signs of head trauma or other injury", ["scalp hematoma", "facial injury", "shoulder injury", "back pain"]),
+        NECK])
+] },
+
+/* ---------------- 18. ALTERED MENTAL STATUS ---------------- */
+{ id: "ams", name: "Altered mental status", cc: "altered mental status", sections: [
+    { title: "Presentation", lead: "Presentation:", q: [
+        ch("src", "History from", ["patient", "family", "caregiver / nursing home", "paramedics"], { t: "history from {}" }),
+        one("basel", "Baseline", ["independent and fully oriented", "mild cognitive impairment", "dementia", "unknown"], { t: "baseline: {}" }),
+        ch("now", "Now", ["confused", "drowsy", "agitated", "hallucinating", "unresponsive"], { t: "now {}" }),
+        one("onset", "Onset", ["over hours", "over days", "fluctuating", "unknown"], { t: "onset {}" }),
+        tx("lsw", "Last seen well", "e.g. last night 22:00", { t: "last seen well {}" })
+    ] },
+    { title: "Symptoms", pos: "Positive for", neg: "No", q: [
+        yn("fever", "Fever"), yn("ha", "Headache"), yn("neckst", "Neck stiffness"),
+        yn("fall", "Head injury or fall"),
+        yn("seiz", "Seizure activity"),
+        yn("focal", "Focal weakness or speech disturbance"),
+        yn("intake", "Vomiting, diarrhea or poor intake", { p: "vomiting/diarrhea/poor intake", n: "vomiting/diarrhea/poor intake" }),
+        yn("uri", "Urinary symptoms"),
+        yn("resp", "Cough or shortness of breath"),
+        yn("cp", "Chest pain"), yn("abdp", "Abdominal pain")
+    ] },
+    { title: "Drugs and toxins", pos: "Positive for", neg: "No", q: [
+        ETOH,
+        yn("drugs", "Recreational drug use", { sub: [tx("drugs_x", "Which", "", { t: "{}" })] }),
+        yn("newmed", "New or changed medication", { sub: [tx("newmed_x", "Which", "", { t: "{}" })] }),
+        yn("sed", "Opioids, benzodiazepines or anticholinergics", { p: "use of opioids/benzodiazepines/anticholinergics", n: "opioid/benzodiazepine/anticholinergic use" }),
+        yn("od", "Possible overdose or ingestion"),
+        yn("missed", "Missed regular medications")
+    ] },
+    { title: "History", part: "hx", head: "History", q: [
+        DM, CKD,
+        yn("liver", "Liver disease / cirrhosis"),
+        STROKE,
+        yn("epi", "Seizure disorder"),
+        yn("psych", "Psychiatric illness"),
+        COPD, CANCER, IMMUNO, ANTICOAG,
+        yn("thyroid", "Thyroid disease")
+    ] },
+    EXAM([
+        ex("g", "General", "alert, cooperative, GCS 15", ["drowsy", "confused", "agitated", "unresponsive", "ill-appearing"]),
+        tx("gcs", "GCS", "e.g. E3 V4 M6 = 13"),
+        GLU,
+        ex("pupils", "Pupils", "equal and reactive", ["pinpoint", "dilated", "unequal", "non-reactive"]),
+        ex("neuro", "Neuro", "moves all limbs equally, no facial droop, no focal deficit", ["facial droop", "arm weakness", "leg weakness", "speech disturbance", "asterixis", "tremor", "myoclonus"]),
+        NECK, CV, LUNG, ABD,
+        ex("skin", "Skin", "warm and dry, no rash, no injuries", ["petechiae / purpura", "jaundice", "needle marks", "pressure sores", "bruising", "sweaty", "cool peripheries"]),
+        ex("head", "Head", "no signs of trauma", ["scalp hematoma", "facial injury"])])
+] },
+
+/* ---------------- 19. RASH ---------------- */
+{ id: "rash", name: "Rash", cc: "a rash", sections: [
+    { title: "Rash", lead: "Rash:", pos: "Rash is", neg: "Not", q: [
+        tx("loc", "Location / distribution", "e.g. trunk and both arms", { t: "on the {}" }),
+        DUR,
+        yn("spread", "Spreading"), yn("itch", "Itchy"), yn("pain", "Painful")
+    ] },
+    { title: "Red flags", q: [
+        yn("fever", "Fever"),
+        yn("muc", "Mouth, eye or genital involvement", { p: "mucosal involvement", n: "mucosal involvement", sub: [ch("muc_c", "Where", ["mouth", "eyes", "genitals"])] }),
+        yn("blister", "Blistering or skin peeling"),
+        yn("airway", "Lip / tongue swelling or difficulty breathing"),
+        yn("oop", "Pain out of proportion to appearance", { h: "necrotizing infection" }),
+        yn("ha", "Headache or neck stiffness"),
+        yn("joint", "Joint pain")
+    ] },
+    { title: "Context and history", part: "hx", head: "History", q: [
+        yn("newmed", "New medication in the last 8 weeks", { p: "new medication in the last 8 weeks", n: "new medications", sub: [tx("newmed_x", "Which / when started", "e.g. allopurinol, 3 weeks ago", { t: "{}" })] }),
+        yn("expo", "New exposure", { h: "soap, plant, food, animal", sub: [tx("expo_x", "What", "", { t: "{}" })] }),
+        yn("sick", "Contacts with a similar rash"),
+        yn("travel", "Recent travel or tick / outdoor exposure"),
+        yn("sti", "New sexual partner or STI risk"),
+        yn("atopy", "Eczema, psoriasis or atopy", { p: "eczema/psoriasis/atopy", n: "eczema/psoriasis/atopy" }),
+        IMMUNO, DM, PREG
+    ] },
+    EXAM([G,
+        ch("morph", "Morphology", ["macular", "papular", "maculopapular", "vesicular", "bullous", "pustular", "urticarial", "petechial / purpuric", "erythematous plaque", "target lesions"]),
+        tx("desc", "Description / extent", "e.g. confluent over the trunk, about 20% BSA", { w: 1 }),
+        one("blanch", "Blanching", ["blanches with pressure", "non-blanching"]),
+        one("nikol", "Nikolsky sign", ["negative", "positive"]),
+        ex("mucx", "Mucosa", "oral mucosa and conjunctivae normal", ["oral ulcers", "conjunctivitis", "lip crusting", "genital lesions"]),
+        ex("st", "Soft tissue", "no warmth, induration, fluctuance or crepitus", ["warmth", "induration", "fluctuance", "crepitus", "marked tenderness"]),
+        ex("nodes", "Lymph nodes", "no lymphadenopathy", ["cervical", "axillary", "inguinal", "generalized"])])
+] },
+
+/* ---------------- 20. EYE ---------------- */
+{ id: "eye", name: "Eye complaint", cc: "an eye complaint", sections: [
+    { title: "Eye symptoms", lead: "Eye:", q: [
+        one("side", "Which eye", ["right eye", "left eye", "both eyes"]),
+        ch("sx", "Main symptoms", ["pain", "redness", "visual loss", "blurred vision", "discharge", "foreign body sensation", "floaters", "flashes", "diplopia", "itching", "watering"]),
+        ONSET, DUR
+    ] },
+    { title: "Red flags", q: [
+        yn("vloss", "Sudden loss of vision"),
+        yn("curtain", "Curtain or shadow across the vision", { h: "retinal detachment" }),
+        yn("halos", "Halos with headache or vomiting", { h: "acute angle-closure glaucoma" }),
+        yn("severe", "Severe eye pain"),
+        yn("photo", "Photophobia"),
+        yn("eom", "Pain on eye movement"),
+        yn("chem", "Chemical exposure", { sub: [tx("chem_x", "Which chemical", "e.g. bleach", { t: "{}" }), yn("chem_i", "Irrigated before arrival")] }),
+        yn("hv", "High-speed injury", { h: "hammering, grinding" }),
+        yn("blunt", "Blunt trauma to the eye"),
+        yn("gca", "Temporal headache or jaw claudication", { h: "giant cell arteritis, age >50" })
+    ] },
+    { title: "Context and history", part: "hx", head: "History", q: [
+        yn("cl", "Contact lens wearer", { p: "contact lens wear", n: "contact lens wear" }),
+        yn("dc", "Discharge", { sub: [one("dc_c", "Type", ["purulent", "watery", "mucoid"])] }),
+        yn("sick", "Contacts with red eye or recent cold"),
+        yn("uv", "Welding or UV exposure"),
+        yn("eyehx", "Previous eye surgery or eye disease", { sub: [tx("eyehx_x", "Which", "e.g. cataract surgery 2 weeks ago", { t: "{}" })] }),
+        DM, HTN, ANTICOAG
+    ] },
+    EXAM([
+        tx("va", "Visual acuity", "e.g. R 6/6, L 6/12", { w: 1 }),
+        ex("pup", "Pupils", "equal, round and reactive, no relative afferent pupillary defect", ["relative afferent pupillary defect", "fixed mid-dilated pupil", "irregular pupil", "unequal pupils"]),
+        ex("eomx", "Eye movements", "full and painless", ["painful", "restricted", "diplopia"]),
+        ex("vf", "Visual fields", "full to confrontation", ["field defect"]),
+        ex("lids", "Lids", "normal, no foreign body on eversion", ["swelling", "foreign body under lid", "laceration", "stye / chalazion"]),
+        ex("conj", "Conjunctiva / sclera", "white, no injection", ["diffuse injection", "ciliary flush", "subconjunctival hemorrhage", "chemosis", "discharge"]),
+        ex("cornea", "Cornea (fluorescein)", "clear, no fluorescein uptake", ["abrasion", "ulcer / infiltrate", "dendritic lesion", "foreign body", "hazy cornea", "Seidel positive"]),
+        ex("ac", "Anterior chamber", "deep and clear", ["hyphema", "hypopyon", "shallow"]),
+        tx("iop", "Intraocular pressure", "e.g. R 14, L 16"),
+        ex("fundus", "Fundus", "red reflex present, disc and retina normal", ["absent red reflex", "pale retina with cherry-red spot", "retinal hemorrhages", "swollen disc", "retinal detachment"])])
+] }
 ];
 
-// ============================================================
-// app.js — Application logic (inline)
-// ============================================================
-(function () {
-    "use strict";
+COMPLAINTS.forEach(function (c) {
+    var examIdx = -1;
+    c.sections.forEach(function (s, i) { if (s.part === "exam") examIdx = i; });
+    c.sections.splice(examIdx < 0 ? c.sections.length : examIdx, 0, BACKGROUND);
+});
 
-    var currentComplaint = null;
-    var answers = {};
+/* ================================================================
+   NOTE BUILDER (no DOM access)
+   ================================================================ */
+var A = {};                                   // answers by question id
+var P = { age: "", sex: "", story: "" };      // patient
+var cur = null;                               // current complaint
 
-    var complaintGrid = document.getElementById("complaint-grid");
-    var complaintSection = document.getElementById("complaint-section");
-    var questionsSection = document.getElementById("questions-section");
-    var noteSection = document.getElementById("note-section");
-    var selectedComplaintLabel = document.getElementById("selected-complaint-label");
-    var changeComplaintBtn = document.getElementById("change-complaint-btn");
-    var contextInput = document.getElementById("context-input");
-    var questionPanels = document.getElementById("question-panels");
-    var generateNoteBtn = document.getElementById("generate-note-btn");
-    var clearAllBtn = document.getElementById("clear-all-btn");
-    var noteOutput = document.getElementById("note-output");
-    var copyNoteBtn = document.getElementById("copy-note-btn");
-    var editQuestionsBtn = document.getElementById("edit-questions-btn");
+function sl(s) { return s.replace(/ \/ /g, "/"); }
+function lc(s) { s = sl(s); return /^[A-Z][a-z]/.test(s) ? s.charAt(0).toLowerCase() + s.slice(1) : s; }
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function list(items, conj) {
+    if (items.length === 1) return items[0];
+    if (items.length === 2) return items[0] + " " + conj + " " + items[1];
+    return items.slice(0, -1).join(", ") + ", " + conj + " " + items[items.length - 1];
+}
+function vis(q) { return !q.sex || !P.sex || q.sex === P.sex; }
+function sexKnown(q) { return !q.sex || q.sex === P.sex; }
+function tpl(q, v) { return q.t ? q.t.replace("{}", v) : v; }
 
-    function renderComplaintGrid() {
-        complaintGrid.innerHTML = "";
-        COMPLAINTS.forEach(function (c) {
-            var btn = document.createElement("button");
-            btn.className = "complaint-btn";
-            btn.innerHTML = '<span class="emoji">' + c.emoji + "</span>" + c.name;
-            btn.addEventListener("click", function () {
-                selectComplaint(c);
-            });
-            complaintGrid.appendChild(btn);
-        });
+/* Fragments for chips / text / scale. Returns an array of strings. */
+function frags(q) {
+    var v = A[q.id];
+    if (q.type === "scale") return v ? ["severity " + v + "/10"] : [];
+    if (q.type === "text") return v ? [q.t ? tpl(q, v) : lc(q.label) + " " + v] : [];
+    if (q.type === "chips") {
+        var arr = q.single ? (v ? [v] : []) : (v || []);
+        var plain = [], raw = [];
+        arr.forEach(function (x) { x = sl(x); if (/^no /.test(x)) raw.push(x); else plain.push(x); });
+        var out = [];
+        if (plain.length) out.push(tpl(q, list(plain, "and")));
+        return out.concat(raw);
     }
-
-    function selectComplaint(complaint) {
-        currentComplaint = complaint;
-        Object.keys(answers).forEach(function (k) { delete answers[k]; });
-        contextInput.value = "";
-        selectedComplaintLabel.textContent = complaint.emoji + " " + complaint.name;
-        complaintSection.classList.add("hidden");
-        noteSection.classList.add("hidden");
-        questionsSection.classList.remove("hidden");
-        renderPanels();
-    }
-
-    changeComplaintBtn.addEventListener("click", function () {
-        questionsSection.classList.add("hidden");
-        noteSection.classList.add("hidden");
-        complaintSection.classList.remove("hidden");
+    return [];
+}
+/* Details of answered follow-up questions, flattened. */
+function details(q) {
+    var out = [];
+    (q.sub || []).forEach(function (s) {
+        if (!vis(s)) return;
+        if (s.type === "yn") {
+            if (A[s.id] === true) { out.push(s.p || lc(s.label)); out = out.concat(details(s)); }
+            else if (A[s.id] === false) out.push("no " + (s.n || lc(s.label)));
+        } else {
+            out = out.concat(frags(s));
+        }
     });
+    return out;
+}
+function withDetails(text, q) {
+    var d = details(q);
+    return d.length ? text + " (" + d.join("; ") + ")" : text;
+}
+
+function sectionText(sec) {
+    var fr = [], yes = [], no = [], sents = [];
+    var isHx = sec.part === "hx";
+    var pos = sec.pos !== undefined ? sec.pos : (isHx ? "" : "Reports");
+    var neg = sec.neg !== undefined ? sec.neg : (isHx ? "No" : "Denies");
+    sec.q.forEach(function (q) {
+        if (!vis(q)) return;
+        if (q.type !== "yn") { fr = fr.concat(frags(q)); return; }
+        var v = A[q.id];
+        if (v === true) {
+            if (q.yes) sents.push(withDetails(q.yes, q) + ".");
+            else yes.push(withDetails(q.p || lc(q.label), q));
+        } else if (v === false || (!q.s && sexKnown(q))) {
+            if (q.no) sents.push(q.no + ".");
+            else if (!q.yes) no.push(q.n || lc(q.label));
+        }
+    });
+    var out = [];
+    if (fr.length) out.push((sec.lead ? sec.lead + " " + fr.join(", ") : cap(fr.join(", "))) + ".");
+    out = out.concat(sents);
+    if (yes.length) out.push(cap((pos ? pos + " " : "") + list(yes, "and")) + ".");
+    if (no.length) out.push(cap(neg + " " + list(no, "or")) + ".");
+    return out.join(" ");
+}
+
+function examLines(sec) {
+    var lines = [];
+    sec.q.forEach(function (q) {
+        if (!vis(q)) return;
+        if (q.type === "exam") {
+            var v = A[q.id];
+            if (v === "n") lines.push(q.label + ": " + q.normal + ".");
+            else if (v === "a") {
+                var parts = (A[q.id + "_f"] || []).map(sl);
+                if (A[q.id + "_t"]) parts.push(A[q.id + "_t"]);
+                lines.push(q.label + ": " + (parts.length ? parts.join(", ") : "abnormal") + ".");
+            }
+        } else {
+            var v2 = A[q.id];
+            var txt = q.type === "text" ? v2 : (q.single ? v2 : (v2 && v2.length ? v2.join(", ") : ""));
+            if (txt && q.type !== "text") txt = sl(txt);
+            if (txt) lines.push(q.label + ": " + txt + ".");
+        }
+    });
+    return lines;
+}
+
+function intro() {
+    var who;
+    var sex = P.sex === "M" ? "male" : P.sex === "F" ? "female" : "";
+    if (P.age) who = P.age + "-year-old" + (sex ? " " + sex : " patient");
+    else who = sex ? cap(sex) + " patient" : "Patient";
+    var s = who + " presenting with " + cur.cc + ".";
+    var story = P.story.replace(/\s+$/, "");
+    if (story) s += " " + story + (/[.!?]$/.test(story) ? "" : ".");
+    return s;
+}
+
+function buildNote() {
+    if (!cur) return "";
+    var hpi = [intro()], hx = [], exam = [];
+    cur.sections.forEach(function (sec) {
+        if (sec.part === "exam") { exam = exam.concat(examLines(sec)); return; }
+        if (sec.part === "bg") {
+            if (A.pmh_o) hx.push("Other history: " + A.pmh_o + ".");
+            if (A.meds) hx.push("Medications: " + A.meds + ".");
+            if (A.allergy === true) hx.push("Allergies: " + (A.allergy_x || "yes, details not recorded") + ".");
+            else if (A.allergy === false) hx.push("Allergies: no known drug allergies.");
+            return;
+        }
+        var t = sectionText(sec);
+        if (!t) return;
+        if (sec.part === "hx") hx.push((sec.head || "History") + ": " + t);
+        else hpi.push(t);
+    });
+    var out = ["CC: " + cur.name, "", "HPI: " + hpi.join("\n")];
+    if (hx.length) out.push("", hx.join("\n"));
+    if (exam.length) out.push("", "Exam:", exam.join("\n"));
+    return out.join("\n");
+}
+
+/* ================================================================
+   UI
+   ================================================================ */
+(function () {
+    if (typeof document === "undefined") return;
+    function $(id) { return document.getElementById(id); }
+    function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+
+    var noteEl = $("note-output");
+    var EMPTY = "Choose a chief complaint to start. The note builds here as you tap.";
+
+    function updateNote() {
+        var n = buildNote();
+        noteEl.textContent = n || EMPTY;
+        noteEl.className = "note-output" + (n ? "" : " empty");
+    }
+
+    function clearSubs(q) {
+        (q.sub || []).forEach(function (s) { delete A[s.id]; clearSubs(s); });
+        if (q.type === "exam") { delete A[q.id + "_f"]; delete A[q.id + "_t"]; }
+    }
+
+    function chipGroup(id, options, single, cls) {
+        var g = el("div", "chips" + (cls ? " " + cls : ""));
+        options.forEach(function (o) {
+            var b = el("button", "chip", o);
+            b.type = "button";
+            var isOn = single ? A[id] === o : (A[id] || []).indexOf(o) >= 0;
+            if (isOn) b.classList.add("on");
+            b.setAttribute("aria-pressed", isOn ? "true" : "false");
+            b.addEventListener("click", function () {
+                if (single) {
+                    var was = A[id] === o;
+                    Array.prototype.forEach.call(g.children, function (c) { c.classList.remove("on"); c.setAttribute("aria-pressed", "false"); });
+                    if (was) delete A[id]; else { A[id] = o; b.classList.add("on"); b.setAttribute("aria-pressed", "true"); }
+                } else {
+                    var arr = A[id] || [];
+                    var i = arr.indexOf(o);
+                    if (i >= 0) arr.splice(i, 1); else arr.push(o);
+                    if (arr.length) A[id] = arr; else delete A[id];
+                    b.classList.toggle("on", i < 0);
+                    b.setAttribute("aria-pressed", i < 0 ? "true" : "false");
+                }
+                updateNote();
+            });
+            g.appendChild(b);
+        });
+        return g;
+    }
+
+    function textInput(id, ph, label) {
+        var inp = el("input", "txt");
+        inp.type = "text"; inp.placeholder = ph || ""; inp.value = A[id] || "";
+        inp.setAttribute("aria-label", label);
+        inp.addEventListener("input", function () {
+            var v = inp.value.replace(/^\s+|\s+$/g, "");
+            if (v) A[id] = v; else delete A[id];
+            updateNote();
+        });
+        return inp;
+    }
+
+    function toggle(q, wrap, isSub, defs, openVal) {
+        var g = el("div", "tog" + (q.type === "exam" ? " exam" : ""));
+        defs.forEach(function (d) {
+            var b = el("button", A[q.id] === d.val ? d.cls : "", d.text);
+            b.type = "button";
+            b.setAttribute("data-v", String(d.val));
+            b.setAttribute("aria-pressed", A[q.id] === d.val ? "true" : "false");
+            b.setAttribute("aria-label", q.label + ": " + d.text);
+            b.addEventListener("click", function () {
+                if (A[q.id] === d.val) delete A[q.id]; else A[q.id] = d.val;
+                if (A[q.id] !== openVal) clearSubs(q);
+                var fresh = renderQ(q, isSub);
+                wrap.parentNode.replaceChild(fresh, wrap);
+                var again = fresh.querySelector('[data-v="' + String(d.val) + '"]');
+                if (again) again.focus();
+                updateNote();
+            });
+            g.appendChild(b);
+        });
+        return g;
+    }
+
+    function renderQ(q, isSub) {
+        var wrap = el("div", "q");
+        if (!vis(q)) { wrap.className = "q hidden"; return wrap; }
+        var row = el("div", "row" + (q.w ? " stack" : ""));
+        var lab = el("div", "lab", q.label);
+        if (q.type === "exam") lab.appendChild(el("small", "", q.normal));
+        else if (q.h) lab.appendChild(el("small", "", q.h));
+        row.appendChild(lab);
+
+        if (q.type === "yn") {
+            row.appendChild(toggle(q, wrap, isSub, [
+                { val: true, text: "Yes", cls: "on-yes" },
+                { val: false, text: "No", cls: "on-no" }
+            ], true));
+        } else if (q.type === "exam") {
+            row.appendChild(toggle(q, wrap, isSub, [
+                { val: "n", text: "Normal", cls: "on-yes" },
+                { val: "a", text: "Abnormal", cls: "on-abn" }
+            ], "a"));
+        } else if (q.type === "chips") {
+            row.appendChild(chipGroup(q.id, q.options, q.single));
+        } else if (q.type === "scale") {
+            row.appendChild(chipGroup(q.id, ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"], true, "scale"));
+        } else if (q.type === "text") {
+            row.appendChild(textInput(q.id, q.ph, q.label));
+        }
+        wrap.appendChild(row);
+
+        if (q.type === "yn" && q.sub && A[q.id] === true) {
+            var subs = el("div", "subs");
+            q.sub.forEach(function (s) { subs.appendChild(renderQ(s, true)); });
+            wrap.appendChild(subs);
+        }
+        if (q.type === "exam" && A[q.id] === "a") {
+            var box = el("div", "subs");
+            if (q.abn.length) {
+                var r1 = el("div", "row stack");
+                r1.appendChild(chipGroup(q.id + "_f", q.abn, false));
+                box.appendChild(r1);
+            }
+            var r2 = el("div", "row stack");
+            r2.appendChild(textInput(q.id + "_t", "Other findings / details (side, size...)", q.label + " details"));
+            box.appendChild(r2);
+            wrap.appendChild(box);
+        }
+        return wrap;
+    }
 
     function renderPanels() {
-        questionPanels.innerHTML = "";
-        currentComplaint.sections.forEach(function (section, idx) {
-            var panel = document.createElement("div");
-            panel.className = "panel" + (idx === 0 ? " open" : "");
-
-            var header = document.createElement("div");
-            header.className = "panel-header";
-            header.innerHTML = "<span>" + section.title + "</span><span class='arrow'>&#9654;</span>";
-            header.addEventListener("click", function () {
-                panel.classList.toggle("open");
-            });
-
-            var body = document.createElement("div");
-            body.className = "panel-body";
-
-            section.questions.forEach(function (q) {
-                renderQuestion(body, q, false);
-            });
-
-            panel.appendChild(header);
-            panel.appendChild(body);
-            questionPanels.appendChild(panel);
-        });
-    }
-
-    function renderQuestion(container, q, isSub) {
-        var row = document.createElement("div");
-        row.className = "question-row" + (isSub ? " sub-question" : "");
-        row.dataset.questionId = q.id;
-
-        var label = document.createElement("span");
-        label.className = "question-label";
-        label.textContent = q.label;
-        row.appendChild(label);
-
-        if (q.type === "yesno") {
-            row.appendChild(createToggle(q));
-        } else if (q.type === "text") {
-            row.appendChild(createTextInput(q));
-        } else if (q.type === "select") {
-            row.appendChild(createSelect(q));
-        } else if (q.type === "chips") {
-            row.appendChild(createChips(q));
-        }
-
-        container.appendChild(row);
-
-        if (q.sub && q.sub.length > 0) {
-            var subContainer = document.createElement("div");
-            subContainer.className = "sub-container hidden";
-            subContainer.dataset.parentId = q.id;
-            q.sub.forEach(function (sq) {
-                renderQuestion(subContainer, sq, true);
-            });
-            container.appendChild(subContainer);
-        }
-    }
-
-    function createToggle(q) {
-        var group = document.createElement("div");
-        group.className = "toggle-group";
-
-        var yesBtn = document.createElement("button");
-        yesBtn.textContent = "Yes";
-        yesBtn.type = "button";
-        var noBtn = document.createElement("button");
-        noBtn.textContent = "No";
-        noBtn.type = "button";
-
-        function update(val) {
-            answers[q.id] = val;
-            yesBtn.className = val === true ? "active-yes" : "";
-            noBtn.className = val === false ? "active-no" : "";
-
-            var subContainer = group.parentElement.parentElement.querySelector(
-                '[data-parent-id="' + q.id + '"]'
-            );
-            if (subContainer) {
-                if (val === true) {
-                    subContainer.classList.remove("hidden");
-                } else {
-                    subContainer.classList.add("hidden");
-                    if (q.sub) {
-                        q.sub.forEach(function (sq) { delete answers[sq.id]; });
-                    }
-                }
+        var panels = $("panels");
+        panels.innerHTML = "";
+        cur.sections.forEach(function (sec) {
+            var card = el("div", "card");
+            var head = el("div", "card-head");
+            head.appendChild(el("h2", "", sec.title));
+            if (sec.part === "exam") {
+                var all = el("button", "btn-sm", "Mark all normal");
+                all.type = "button";
+                all.title = "Sets every unmarked exam item to normal. Items already marked are kept.";
+                all.addEventListener("click", function () {
+                    sec.q.forEach(function (q) { if (q.type === "exam" && vis(q) && A[q.id] === undefined) A[q.id] = "n"; });
+                    renderPanels(); updateNote();
+                });
+                head.appendChild(all);
             }
-        }
-
-        yesBtn.addEventListener("click", function () { update(answers[q.id] === true ? undefined : true); });
-        noBtn.addEventListener("click", function () { update(answers[q.id] === false ? undefined : false); });
-
-        group.appendChild(yesBtn);
-        group.appendChild(noBtn);
-        return group;
+            card.appendChild(head);
+            var body = el("div", "card-body");
+            sec.q.forEach(function (q) { body.appendChild(renderQ(q, false)); });
+            card.appendChild(body);
+            panels.appendChild(card);
+        });
     }
 
-    function createTextInput(q) {
-        var input = document.createElement("input");
-        input.type = "text";
-        input.className = "inline-input";
-        input.placeholder = q.placeholder || "";
-        input.addEventListener("input", function () {
-            answers[q.id] = input.value.trim() || undefined;
-        });
-        return input;
+    function hasAnswers() { for (var k in A) { if (Object.prototype.hasOwnProperty.call(A, k)) return true; } return false; }
+    function clearAnswers() { Object.keys(A).forEach(function (k) { delete A[k]; }); }
+
+    function showPicker() {
+        cur = null;
+        $("questions").classList.add("hidden");
+        $("picker").classList.remove("hidden");
+        updateNote();
+    }
+    function selectComplaint(c) {
+        clearAnswers();
+        cur = c;
+        $("cc-name").textContent = c.name;
+        $("picker").classList.add("hidden");
+        $("questions").classList.remove("hidden");
+        renderPanels(); updateNote();
+        window.scrollTo(0, 0);
     }
 
-    function createSelect(q) {
-        var select = document.createElement("select");
-        select.className = "inline-select";
-        var def = document.createElement("option");
-        def.value = "";
-        def.textContent = "\u2014";
-        select.appendChild(def);
-        q.options.forEach(function (o) {
-            var opt = document.createElement("option");
-            opt.value = o;
-            opt.textContent = o;
-            select.appendChild(opt);
-        });
-        select.addEventListener("change", function () {
-            answers[q.id] = select.value || undefined;
-        });
-        return select;
-    }
-
-    function createChips(q) {
-        var group = document.createElement("div");
-        group.className = "chip-group";
-        if (!answers[q.id]) answers[q.id] = [];
-        q.options.forEach(function (o) {
-            var chip = document.createElement("button");
-            chip.className = "chip";
-            chip.type = "button";
-            chip.textContent = o;
-            chip.addEventListener("click", function () {
-                var arr = answers[q.id] || [];
-                var idx = arr.indexOf(o);
-                if (idx >= 0) {
-                    arr.splice(idx, 1);
-                    chip.classList.remove("active");
-                } else {
-                    arr.push(o);
-                    chip.classList.add("active");
-                }
-                answers[q.id] = arr.length > 0 ? arr : undefined;
-            });
-            group.appendChild(chip);
-        });
-        return group;
-    }
-
-    generateNoteBtn.addEventListener("click", function () {
-        var note = buildNote();
-        noteOutput.textContent = note;
-        noteSection.classList.remove("hidden");
-        questionsSection.classList.add("hidden");
+    COMPLAINTS.forEach(function (c) {
+        var b = el("button", "complaint-btn", c.name);
+        b.type = "button";
+        b.addEventListener("click", function () { selectComplaint(c); });
+        $("complaint-grid").appendChild(b);
     });
 
-    editQuestionsBtn.addEventListener("click", function () {
-        noteSection.classList.add("hidden");
-        questionsSection.classList.remove("hidden");
+    $("change-btn").addEventListener("click", function () {
+        if (hasAnswers() && !window.confirm("Change complaint? The answers entered for this complaint will be cleared.")) return;
+        clearAnswers(); showPicker();
+    });
+    $("new-btn").addEventListener("click", function () {
+        if ((hasAnswers() || P.age || P.story) && !window.confirm("Start a new patient? Everything entered will be cleared.")) return;
+        clearAnswers();
+        P.age = ""; P.sex = ""; P.story = "";
+        $("age-input").value = ""; $("story-input").value = "";
+        paintSex(); showPicker();
+        window.scrollTo(0, 0);
     });
 
-    clearAllBtn.addEventListener("click", function () {
-        Object.keys(answers).forEach(function (k) { delete answers[k]; });
-        contextInput.value = "";
-        renderPanels();
-    });
-
-    copyNoteBtn.addEventListener("click", function () {
-        navigator.clipboard.writeText(noteOutput.textContent).then(function () {
-            showToast("Copied to clipboard");
+    $("age-input").addEventListener("input", function () { P.age = this.value.replace(/[^0-9]/g, ""); updateNote(); });
+    $("story-input").addEventListener("input", function () { P.story = this.value.replace(/^\s+/, ""); updateNote(); });
+    function paintSex() {
+        Array.prototype.forEach.call($("sex-tog").children, function (b) {
+            var on = b.getAttribute("data-sex") === P.sex;
+            b.className = on ? "on-yes" : "";
+            b.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+    }
+    Array.prototype.forEach.call($("sex-tog").children, function (b) {
+        b.addEventListener("click", function () {
+            var s = b.getAttribute("data-sex");
+            P.sex = P.sex === s ? "" : s;
+            paintSex();
+            if (cur) renderPanels();
+            updateNote();
         });
     });
 
-    function showToast(msg) {
-        var toast = document.createElement("div");
-        toast.className = "toast";
-        toast.textContent = msg;
-        document.body.appendChild(toast);
-        setTimeout(function () { toast.remove(); }, 2100);
+    function toast(msg) {
+        var t = el("div", "toast", msg);
+        document.body.appendChild(t);
+        setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 1800);
     }
-
-    function buildNote() {
-        var lines = [];
-
-        // CC line
-        lines.push("CC: " + currentComplaint.name);
-        lines.push("");
-
-        // Opening line
-        var intro = "";
-        if (contextInput.value.trim()) {
-            intro = contextInput.value.trim() + ", presenting with " + currentComplaint.name.toLowerCase() + ".";
-        } else {
-            intro = "Patient presents with " + currentComplaint.name.toLowerCase() + ".";
+    function copyNote() {
+        var text = buildNote();
+        if (!text) { toast("Nothing to copy yet"); return; }
+        function fallback() {
+            var ta = document.createElement("textarea");
+            ta.value = text; ta.setAttribute("readonly", "");
+            ta.style.position = "fixed"; ta.style.top = "-1000px";
+            document.body.appendChild(ta); ta.select();
+            var ok = false;
+            try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+            document.body.removeChild(ta);
+            toast(ok ? "Note copied" : "Could not copy. Select the note text and copy it manually.");
         }
-        lines.push(intro);
-
-        // Each section becomes a narrative paragraph
-        currentComplaint.sections.forEach(function (section) {
-            var text = buildSectionNarrative(section);
-            if (text) {
-                lines.push("");
-                lines.push(text);
-            }
-        });
-
-        return lines.join("\n").trim();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () { toast("Note copied"); }, fallback);
+        } else fallback();
     }
+    $("copy-btn").addEventListener("click", copyNote);
+    $("copy-btn-m").addEventListener("click", copyNote);
+    $("jump-btn").addEventListener("click", function () { $("note-col").scrollIntoView({ behavior: "smooth" }); });
 
-    function buildSectionNarrative(section) {
-        var descriptors = [];
-        var positives = [];
-        var negatives = [];
-
-        section.questions.forEach(function (q) {
-            var val = answers[q.id];
-            var label = q.noteLabel || q.label;
-
-            if (q.type === "chips") {
-                if (Array.isArray(val) && val.length > 0) {
-                    descriptors.push(label + ": " + val.join(", "));
-                }
-            } else if (q.type === "text") {
-                if (typeof val === "string" && val) {
-                    descriptors.push(label + ": " + val);
-                }
-            } else if (q.type === "select") {
-                if (val) {
-                    var cleanLabel = label.replace(/\s*\(1-10\)/, "");
-                    descriptors.push(cleanLabel + " " + val + "/10");
-                }
-            } else if (q.type === "yesno") {
-                if (val === true) {
-                    var detail = label;
-                    // Append sub-question details
-                    if (q.sub) {
-                        var subParts = [];
-                        q.sub.forEach(function (sq) {
-                            var sv = answers[sq.id];
-                            if (sv === undefined || sv === null) return;
-                            var sLabel = sq.noteLabel || sq.label;
-                            if (sv === true) {
-                                subParts.push(sLabel.toLowerCase());
-                            } else if (Array.isArray(sv) && sv.length > 0) {
-                                subParts.push(sv.join(", "));
-                            } else if (typeof sv === "string" && sv) {
-                                subParts.push(sLabel + ": " + sv);
-                            }
-                        });
-                        if (subParts.length > 0) {
-                            detail += " (" + subParts.join("; ") + ")";
-                        }
-                    }
-                    positives.push(detail);
-                } else {
-                    // Explicitly "No" OR unanswered — symptom not present
-                    negatives.push(cleanForNote(label));
-                }
-            }
-        });
-
-        // Build the narrative
-        var sentences = [];
-
-        if (descriptors.length > 0) {
-            sentences.push(descriptors.join(". ") + ".");
-        }
-        if (positives.length > 0) {
-            sentences.push(positives.join(". ") + ".");
-        }
-        if (negatives.length > 0) {
-            sentences.push("No " + formatNoteList(negatives) + ".");
-        }
-
-        return sentences.join(" ");
-    }
-
-    function cleanForNote(label) {
-        return label
-            .toLowerCase()
-            .replace(/\s*\(.*?\)\s*/g, "")
-            .replace(/\s+/g, " ")
-            .trim();
-    }
-
-    function formatNoteList(items) {
-        if (items.length === 0) return "";
-        if (items.length === 1) return items[0];
-        if (items.length === 2) return items[0] + " or " + items[1];
-        return items.slice(0, -1).join(", ") + ", or " + items[items.length - 1];
-    }
-
-    renderComplaintGrid();
+    updateNote();
 })();
-    </script>
+</script>
 </body>
 </html>
