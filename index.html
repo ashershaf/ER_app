@@ -319,13 +319,13 @@ var COMPLAINTS = [
     { title: "GI symptoms", q: [
         yn("nausea", "Nausea"),
         yn("vomit", "Vomiting", { sub: [
-            ch("vomit_c", "Content", ["food", "bilious", "bloody", "coffee-ground"]),
-            tx("vomit_n", "Episodes", "e.g. 3", { t: "{} episodes" })
+            ch("vomit_c", "Content", ["food", "bilious", "bloody", "coffee-ground"], { pre: 1 }),
+            tx("vomit_n", "Episodes", "e.g. 3", { t: "x{}" })
         ] }),
-        yn("diar", "Diarrhea", { sub: [yn("diar_b", "Bloody"), tx("diar_n", "Frequency", "e.g. 5 per day", { t: "{}" })] }),
+        yn("diar", "Diarrhea", { sub: [yn("diar_b", "Bloody", { pre: 1 }), tx("diar_n", "Frequency", "e.g. 5 per day", { t: "{}" })] }),
         yn("constip", "Constipation", { sub: [
-            tx("constip_l", "Last bowel movement", "e.g. 3 days ago", { t: "last bowel movement {}" }),
-            yn("noflatus", "Not passing flatus")
+            tx("constip_l", "Last bowel movement", "e.g. 3 days ago", { t: "last BM {}" }),
+            yn("noflatus", "Not passing flatus", { p: "not passing flatus", n: "still passing flatus" })
         ] }),
         yn("melena", "Melena"), yn("brbpr", "Rectal bleeding"),
         yn("anorexia", "Loss of appetite"), yn("jaund", "Jaundice / dark urine")
@@ -511,7 +511,7 @@ var COMPLAINTS = [
 { id: "cough", name: "Cough", cc: "cough", sections: [
     { title: "Cough", lead: "Cough:", q: [
         DUR,
-        yn("prod", "Productive", { yes: "Productive", no: "Non-productive", sub: [ch("sputum", "Sputum", ["white", "yellow", "green", "blood-streaked", "rust-colored"], { t: "{} sputum" })] }),
+        yn("prod", "Productive", { yes: "Productive", no: "Non-productive", sub: [ch("sputum", "Sputum", ["white", "yellow", "green", "blood-streaked", "rust-colored"], { t: "{} sputum", of: 1 })] }),
         yn("hemop", "Hemoptysis", { yes: "Hemoptysis present", no: "No hemoptysis", sub: [tx("hemop_x", "Amount", "e.g. streaks, a teaspoon", { t: "{}" })] }),
         yn("noct", "Worse at night", { yes: "Worse at night" })
     ] },
@@ -651,7 +651,7 @@ var COMPLAINTS = [
     ] },
     { title: "Associated symptoms", q: [
         yn("abdp", "Abdominal pain", { sub: [ch("abdp_c", "Where", ["epigastric", "RUQ", "RLQ", "LLQ", "suprapubic", "diffuse"])] }),
-        yn("diar", "Diarrhea", { sub: [yn("diar_b", "Bloody")] }),
+        yn("diar", "Diarrhea", { sub: [yn("diar_b", "Bloody", { pre: 1 })] }),
         yn("fever", "Fever"),
         yn("obstr", "Constipation or not passing flatus", { h: "obstruction" }),
         yn("dist", "Abdominal distension"),
@@ -816,7 +816,7 @@ var COMPLAINTS = [
 /* ---------------- 16. PALPITATIONS ---------------- */
 { id: "palpitations", name: "Palpitations", cc: "palpitations", sections: [
     { title: "Palpitations", lead: "Palpitations:", q: [
-        ch("type", "Sensation", ["rapid", "irregular", "skipped beats", "pounding", "fluttering"]),
+        ch("type", "Sensation", ["rapid", "irregular", "skipped beats", "pounding", "fluttering"], { adj: 1 }),
         one("onset", "Onset", ["sudden", "gradual"], { t: "{} onset" }),
         one("offset", "Offset", ["sudden", "gradual", "still ongoing"], { t: "{} offset" }),
         tx("dur", "Duration / frequency", "e.g. 20 minutes, 3 times this week", { t: "{}" }),
@@ -1063,8 +1063,19 @@ function details(q) {
     return out;
 }
 function withDetails(text, q) {
-    var d = details(q);
-    return d.length ? text + " (" + d.join("; ") + ")" : text;
+    var pre = [], of = [], d = [];
+    (q.sub || []).forEach(function (s) {
+        if (!vis(s)) return;
+        var got = details({ sub: [s] });
+        if (s.pre && s.type !== "yn") pre = pre.concat((A[s.id] && (s.single ? [A[s.id]] : A[s.id]) || []).map(sl));
+        else if (s.pre && A[s.id] === true) pre.push(s.p || lc(s.label));
+        else if (s.of) of = of.concat(got);
+        else d = d.concat(got);
+    });
+    if (pre.length) text = list(pre, "and") + " " + text;
+    if (of.length) text += " of " + list(of, "and");
+    if (d.length === 1 && /^x\d/.test(d[0])) return text + " " + d[0];
+    return d.length ? text + " (" + d.join(", ") + ")" : text;
 }
 
 /* Negative lists: "a/b" reads as "a or b"; when items already contain "or",
@@ -1072,9 +1083,9 @@ function withDetails(text, q) {
 function negList(items, conj) {
     items = items.map(function (x) { return x.replace(/\//g, " or "); });
     var nested = items.some(function (x) { return / or /.test(x); });
+    if (nested && items.length === 2) return items[0] + ", or " + items[1];
     return list(items, nested && conj !== "not" ? "and" : "or");
 }
-function negPhrase(t) { return lc(t).replace(/^no /, "without "); }
 
 /* Collect a section's answers into positive and negative pieces. */
 function sectionParts(sec) {
@@ -1097,37 +1108,118 @@ function sectionParts(sec) {
     return r;
 }
 
-/* First (descriptive) section: a run of comma-separated descriptors. */
-function descriptors(sec, r) {
-    var posw = [], negw = [];
-    r.fr.forEach(function (f) { posw.push(lc(f)); });
-    r.sents.forEach(function (t) { if (/^(no|not) /i.test(t)) negw.push(negPhrase(t)); else posw.push(lc(t)); });
-    var pre = sec.pos && !/ is$/.test(sec.pos) ? lc(sec.pos) + " " : "";
-    if (r.yes.length) posw.push(pre + list(r.yes, "and"));
-    if (r.no.length) {
-        var nw = sec.neg ? lc(sec.neg) : "without";
-        negw.push(nw + " " + negList(r.no, nw));
+var QUAL = { pressure: "pressure-like", tightness: "tight", spasm: "spasm-like" };
+var PLURAL = { palpitations: 1, urinary: 1 };
+var PRED = /^(worse|better|productive|non-productive|triggered|radiates|present|occurs?|brought|pain has|similar|different|unlike|relieved|not )/i;
+
+/* Turn "Worse at night" / "Pain has migrated" into a verb phrase for "It ...". */
+function predicate(t, plural) {
+    t = lc(t).replace(/^pain /, "");
+    if (/^(has|have|is|are|was|radiates|occurs?)\b/.test(t)) return t;
+    return (plural ? "are " : "is ") + t;
+}
+function joinPreds(preds, nots, plural) {
+    var be = plural ? "are " : "is ";
+    var isP = [], other = [];
+    preds.forEach(function (p) { if (p.indexOf(be) === 0) isP.push(p.slice(be.length)); else other.push(p); });
+    var parts = [];
+    if (isP.length) parts.push(be + list(isP, "and") + (nots.length ? ", but not " + nots.join(", ") : ""));
+    else if (nots.length) parts.push(be + "not " + nots.join(", "));
+    parts = parts.concat(other);
+    return parts.length > 1 && isP.length > 1 ? parts.slice(0, -1).join(", ") + ", and " + parts[parts.length - 1] : list(parts, "and");
+}
+
+/* First section: "58-year-old male presenting with sudden-onset crampy periumbilical
+   abdominal pain for 2 hours, rated 5/10, radiating to the back. It is constant and ..." */
+function opening(sec) {
+    var plural = !!PLURAL[cur.id];
+    var on = [], qual = [], loc = [], tail = [], misc = [], preds = [], nots = [], pos = [], neg = [], noSent = [], dur = "";
+    var notSec = sec && /^not$/i.test(sec.neg || ""), isSec = sec && / is$/.test(sec.pos || "");
+    (sec ? sec.q : []).forEach(function (q) {
+        if (!vis(q)) return;
+        var v = A[q.id];
+        if (q.type !== "yn") {
+            if (v === undefined || v === "" || (v && v.length === 0)) return;
+            var vals = (q.single || q.type !== "chips") ? [v] : v;
+            if (q.id === "dur" && q.t === "for {}") { dur = " for " + v; return; }
+            if (q.type === "chips" && q.id === "onset" && vals.length === 1 && /^(sudden|gradual)$/.test(vals[0])) { on.push(vals[0] + "-onset"); return; }
+            if (q.type === "chips" && q.id === "onset") { misc.push("onset " + sl(vals[0])); return; }
+            if (q.type === "chips" && q.id === "qual") { qual.push(list(vals.map(function (x) { return QUAL[x] || x; }), "and")); return; }
+            if (q.type === "chips" && q.adj) {
+                var one = vals.filter(function (x) { return !/ /.test(x); }), multi = vals.filter(function (x) { return / /.test(x); });
+                if (one.length) qual.push(list(one, "and"));
+                if (multi.length) misc.push("with " + list(multi, "and"));
+                return;
+            }
+            if (q.type === "chips" && q.id === "loc") { loc.push(list(vals.map(sl), "and")); return; }
+            if (q.type === "scale") { tail.push("rated " + v + "/10"); return; }
+            if (q.id === "rad") {
+                var r = vals.filter(function (x) { return x !== "no radiation"; });
+                tail.push(r.length ? "radiating to " + (/^both/.test(r[0]) ? "" : "the ") + list(r, "and") : "without radiation");
+                return;
+            }
+            if (q.id === "course") { preds.push((plural ? "are " : "is ") + v); return; }
+            misc = misc.concat(frags(q));
+            return;
+        }
+        if (v === true) {
+            if (q.yes) {
+                var t = withDetails(q.yes, q);
+                if (PRED.test(t)) { if (/^not /i.test(t)) nots.push(lc(t).slice(4)); else preds.push(predicate(t, plural)); }
+                else misc.push(t);
+            } else if (isSec) preds.push((plural ? "are " : "is ") + withDetails(q.p || lc(q.label), q));
+            else pos.push(withDetails(q.p || lc(q.label), q));
+        } else if (v === false || (!q.s && sexKnown(q))) {
+            if (q.no) {
+                if (/^no /i.test(q.no)) noSent.push(cap(q.no) + ".");
+                else if (PRED.test(q.no)) { if (/^not /i.test(q.no)) nots.push(lc(q.no).slice(4)); else preds.push(predicate(q.no, plural)); }
+                else misc.push(q.no);
+            } else if (!q.yes) {
+                if (notSec) nots.push(q.n || lc(q.label)); else neg.push(q.n || lc(q.label));
+            }
+        }
+    });
+    var cc = cur.cc, art = "", adj = on.concat(qual, loc);
+    var m = /^(an?) (.*)$/.exec(cc);
+    if (m) { cc = m[2]; art = "a"; }
+    if (adj.length) cc = adj.join(" ") + " " + cc;
+    if (art) cc = (/^[aeiou]/i.test(cc) ? "an " : "a ") + cc;
+    var out = [who() + " presenting with " + cc + dur + (tail.length ? ", " + tail.join(", ") : "") + "."];
+    if (misc.length) out.push(cap(misc.map(function (x, i) { return i ? lc(x) : x; }).join(", ")) + ".");
+    if (preds.length || nots.length) {
+        if (nots.length) nots = [negList(nots, "not")];
+        out.push((plural ? "They " : "It ") + joinPreds(preds, nots, plural) + ".");
     }
-    return posw.concat(negw);
+    out = out.concat(noSent);
+    if (pos.length) out.push("Reports " + list(pos, "and") + ".");
+    if (neg.length) out.push("No " + negList(neg) + ".");
+    var story = P.story.replace(/\s+$/, "");
+    if (story) out.push(cap(story) + (/[.!?]$/.test(story) ? "" : "."));
+    return out.join(" ");
+}
+
+/* Every other HPI section is pooled: one "Reports ..." and one "Denies ..." sentence. */
+function pooled(secs) {
+    var fr = [], own = [], yes = [], no = [];
+    secs.forEach(function (sec) {
+        var r = sectionParts(sec);
+        fr = fr.concat(r.fr); own = own.concat(r.sents);
+        yes = yes.concat(r.yes); no = no.concat(r.no);
+    });
+    var out = [];
+    if (fr.length) out.push(cap(fr.join(", ")) + ".");
+    own.forEach(function (t) { out.push(cap(t) + "."); });
+    if (yes.length) out.push("Reports " + list(yes, "and") + ".");
+    if (no.length) out.push("Denies " + negList(no) + ".");
+    return out.join(" ");
 }
 
 function sectionText(sec) {
-    var r = sectionParts(sec);
-    var isHx = sec.part === "hx";
-    var out = [];
-    if (isHx) {
-        var items = r.yes.concat(r.fr.map(lc));
-        if (items.length) out.push(cap(items.join(", ")) + ".");
-        r.sents.forEach(function (t) { out.push(cap(t) + "."); });
-        if (r.no.length) out.push("No " + negList(r.no) + ".");
-        return out.join(" ");
-    }
-    var pos = sec.pos !== undefined ? sec.pos : "Associated with";
-    var neg = sec.neg !== undefined ? sec.neg : "Denies";
-    if (r.fr.length) out.push(cap(r.fr.join(", ")) + ".");
+    var r = sectionParts(sec), out = [];
+    var items = r.yes.concat(r.fr.map(lc));
+    if (items.length) out.push(cap(items.join(", ")) + ".");
     r.sents.forEach(function (t) { out.push(cap(t) + "."); });
-    if (r.yes.length) out.push(cap(pos + " " + list(r.yes, "and")) + ".");
-    if (r.no.length) out.push(cap(neg + " " + negList(r.no, lc(neg))) + ".");
+    if (r.no.length) out.push("No " + negList(r.no) + ".");
     return out.join(" ");
 }
 
@@ -1159,18 +1251,6 @@ function who() {
     return sex ? cap(sex) + " patient" : "Patient";
 }
 
-function opening(sec) {
-    var r = sec ? sectionParts(sec) : { fr: [], sents: [], yes: [], no: [], dur: "" };
-    var s = who() + " presenting with " + cur.cc + (r.dur ? " " + r.dur : "");
-    var d = sec ? descriptors(sec, r) : [];
-    if (d.length && d.length <= 3) s += ", " + d.join(", ") + ".";
-    else if (d.length) s += ". " + cap(d.join(", ")) + ".";
-    else s += ".";
-    var story = P.story.replace(/\s+$/, "");
-    if (story) s += " " + cap(story) + (/[.!?]$/.test(story) ? "" : ".");
-    return s;
-}
-
 function buildNote() {
     if (!cur) return "";
     var hx = [], exam = [], rest = [], firstSec = null;
@@ -1184,12 +1264,12 @@ function buildNote() {
             return;
         }
         if (!sec.part && !firstSec) { firstSec = sec; return; }
+        if (sec.part !== "hx") { rest.push(sec); return; }
         var t = sectionText(sec);
-        if (!t) return;
-        if (sec.part === "hx") hx.push((sec.head === "History" ? "PMH" : (sec.head || "PMH")) + ": " + t);
-        else rest.push(t);
+        if (t) hx.push((sec.head === "History" ? "PMH" : (sec.head || "PMH")) + ": " + t);
     });
-    var hpi = opening(firstSec) + (rest.length ? " " + rest.join(" ") : "");
+    var more = pooled(rest);
+    var hpi = opening(firstSec) + (more ? " " + more : "");
     var out = ["CC: " + cur.name, "", "HPI: " + hpi];
     if (hx.length) out.push("", hx.join("\n"));
     if (exam.length) out.push("", "Exam:", exam.join("\n"));
